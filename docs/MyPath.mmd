@@ -1,0 +1,52 @@
+---
+config:
+  theme: neo-dark
+---
+classDiagram
+    class MyPath {
+        << interface >>
+        str rawPath
+        str name        
+        bool? isRegularFile
+        bool? isDirectory
+        bool existed
+        long? size
+
+        toString() str = rawPath
+
+        source() RawSource
+        readString() str
+        readByte() Byte
+        readValue~T~(KSerializer~T~ serializer) T
+
+        sink(bool append) RawSink
+        writeString(str value, bool append)
+        writeByte(Byte value, bool append)
+        writeValue~T~(T value, bool append, KSerializer~T~ serializer)
+
+        move(MyPath path)
+        create()
+        delete()
+        exists() bool
+
+        stat() MyPath?
+    }
+
+    class MyDirectory {
+        << interface >>
+        list(str? pattern = null) Sequence~MyPath~
+        isRegularFile() bool = false
+        isDirectory() bool = true
+    }
+
+    MyPath <|-- MyDirectory
+
+    MyPath <|-- LocalPath
+    MyDirectory <|-- LocalDirectory
+    LocalPath <|-- LocalDirectory
+    MyPath <|-- SMBPath
+    MyDirectory <|-- SMBDirectory
+    SMBPath <|-- SMBDirectory
+    MyPath <|-- URIPath
+    MyDirectory <|-- URIDirectory
+    URIPath <|-- URIDirectory

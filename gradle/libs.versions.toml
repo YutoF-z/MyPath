@@ -1,14 +1,40 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
+project = "0.0.1"
+
+# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-core
+kotlinx-serialization = "1.11.0"
+
+kotlin = "2.3.20"
 android-minSdk = "24"
-android-compileSdk = "36"
-vanniktechMavenPublish = "0.34.0"
+android-compileSdk = "37"
 
 [libraries]
+# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
+kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version = "0.9.0" }
+
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-cbor
+kotlinx-serialization-cbor = { module = "org.jetbrains.kotlinx:kotlinx-serialization-cbor", version.ref = "kotlinx-serialization" }
+# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+# https://kotlinlang.org/docs/dokka-get-started.html
+dokka = { id = "org.jetbrains.dokka", version = "2.2.0" }
+# https://mvnrepository.com/artifact/org.jetbrains.kotlin.plugin.serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.0-Beta1" }
+
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version = "9.1.1" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
+
+[bundles]
+impl = [
+    "kotlinx-io-core",
+    "kotlinx-serialization-core",
+    "kotlinx-serialization-cbor",
+    "kotlinx-serialization-json"
+]

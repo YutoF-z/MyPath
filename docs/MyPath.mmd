@@ -1,0 +1,196 @@
+---
+config:
+  theme: neo-dark
+  layout: elk
+---
+classDiagram
+  %% ===========================
+  %% Base Interfaces
+  %% ===========================
+  class MyPath {
+    << interface >>
+    str rawPath
+    str name
+    long? size
+    bool existed
+    bool isFile
+    bool isDirectory
+    bool isWritable
+
+    stat() kotlinx.io.files.FileMetadata?
+    exists() bool
+    isWritable() bool
+  }
+
+  class MyRWPath {
+    << interface >>
+    bool isWritable = true
+
+    mk()
+    cp(MyPath path)
+    mv(MyPath path)
+    rm()
+  }
+
+  class MyFile {
+    << interface >>
+    source() kotlinx.io.RawSource
+    readString() str
+    readByte() Byte
+    readValue~T~(SerialFormat format, KSerializer~T~ serializer) T
+
+    toWritable() MyRWFile
+  }
+
+  class MyRWFile {
+    << interface >>
+    sink(bool append)
+    writeString(str value, bool append)
+    writeByte(Byte value, bool append)
+    writeValue~T~(T value, SerialFormat format, KSerializer~T~ serializer, bool append)
+  }
+
+  class MyDirectory {
+    << interface >>
+    list(str pattern) Sequence~MyPath~
+    toWritable() MyRWDirectory
+  }
+
+  class MyRWDirectory {
+    << interface >>
+    mkdirs()
+  }
+
+  %% 継承関係（interface のみ）
+  MyPath <|-- MyFile
+  MyPath <|-- MyRWPath
+  MyPath <|-- MyDirectory
+  MyFile <|-- MyRWFile
+  MyRWPath <|-- MyRWFile
+  MyRWPath <|-- MyRWDirectory
+  MyDirectory <|-- MyRWDirectory
+
+  %% ===========================
+  %% Local (platform-specific)
+  %% ===========================
+  class LocalPath { << expect open >> }
+  class LocalFile { << expect >> }
+  class LocalRWFile { << expect >> }
+  class LocalDirectory { << expect >> }
+  class LocalRWDirectory { << expect >> }
+  
+  LocalPath <|-- LocalFile
+  LocalPath <|-- LocalDirectory
+  LocalFile <|-- LocalRWFile
+  LocalDirectory <|-- LocalRWDirectory
+
+  namespace jvm {
+    class LocalPath_j {
+      << actual >>
+      kotlinx.io.files.Path path
+    }
+  }
+
+  namespace android {
+    class LocalPath_a {
+      << actual >>
+      kotlinx.io.files.Path path
+    }
+  }
+
+  %% ===========================
+  %% SMB (Rust)
+  %% ===========================
+  class SMBPath {
+    << open >>
+    isOK() bool
+  }
+  class SMBFile
+  class SMBRWFile
+  class SMBDirectory
+  class SMBRWDirectory
+  
+  SMBPath <|-- SMBFile
+  SMBPath <|-- SMBDirectory
+  SMBFile <|-- SMBRWFile
+  SMBDirectory <|-- SMBRWDirectory
+
+  %% ===========================
+  %% URI (Android SAF)
+  %% ===========================
+  namespace android {
+    class URIPath {
+      << open >>
+      android.net.Uri path
+    }
+    class URIFile
+    class URIRWFile
+    class URIDirectory
+    class URIRWDirectory
+  }
+  
+  URIPath <|-- URIFile
+  URIPath <|-- URIDirectory
+  URIFile <|-- URIRWFile
+  URIDirectory <|-- URIRWDirectory
+
+  %% ===========================
+  %% Asset (read-only)
+  %% ===========================
+  class AssetPath { << open >> }
+  class AssetFile
+  class AssetDirectory
+
+  AssetPath <|-- AssetFile
+  AssetPath <|-- AssetDirectory
+
+  %% ===========================
+  %% Zip (Rust)
+  %% ===========================
+  class ZipPath {
+    << open >>
+    long? uncompressedSize
+  }
+  class ZipFile
+  class ZipDirectory
+
+  ZipPath <|-- ZipFile
+  ZipPath <|-- ZipDirectory
+
+
+  %% ===========================
+  %% HTTP
+  %% ===========================
+  class HttpPath { << open >> }
+  class HttpFile
+
+  HttpPath <|-- HttpFile
+
+  %% ===========================
+  %% Temp
+  %% ===========================
+  class TempPath { << open >> }
+  class TempFile
+  class TempRWFile
+  class TempDirectory
+  class TempRWDirectory
+
+  TempPath <|-- TempFile
+  TempPath <|-- TempDirectory
+  TempFile <|-- TempRWFile
+  TempDirectory <|-- TempRWDirectory
+
+
+  %% ===========================
+  %% Google Drive
+  %% ===========================
+  class GoogleDrivePath { << open >> }
+  class GoogleDriveFile
+  class GoogleDriveRWFile
+  class GoogleDriveDirectory
+  class GoogleDriveRWDirectory
+
+  GoogleDrivePath <|-- GoogleDriveFile
+  GoogleDrivePath <|-- GoogleDriveDirectory
+  GoogleDriveFile <|-- GoogleDriveRWFile
+  GoogleDriveDirectory <|-- GoogleDriveRWDirectory

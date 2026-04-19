@@ -1,0 +1,38 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+$dokka.location:libra.myPath////PointingToDeclaration/library/libra.myPath/index.html
+$dokka.location:libra.myPath//json/#/PointingToDeclaration/library/libra.myPath/json.html
+$dokka.location:libra.myPath//readValue/libra.myPath.MyFile#kotlinx.serialization.SerialFormat/PointingToDeclaration/library/libra.myPath/read-value.html
+$dokka.location:libra.myPath//writeValue/libra.myPath.MyRWFile#TypeParam(bounds=[kotlin.Any?])#kotlinx.serialization.SerialFormat#kotlin.Boolean/PointingToDeclaration/library/libra.myPath/write-value.html
+$dokka.location:libra.myPath/MyDirectory///PointingToDeclaration/library/libra.myPath/-my-directory/index.html
+$dokka.location:libra.myPath/MyDirectory/list/#kotlin.text.Regex?/PointingToDeclaration/library/libra.myPath/-my-directory/list.html
+$dokka.location:libra.myPath/MyDirectory/toWritableOrNull/#/PointingToDeclaration/library/libra.myPath/-my-directory/to-writable-or-null.html
+$dokka.location:libra.myPath/MyFile///PointingToDeclaration/library/libra.myPath/-my-file/index.html
+$dokka.location:libra.myPath/MyFile/readByteArray/#/PointingToDeclaration/library/libra.myPath/-my-file/read-byte-array.html
+$dokka.location:libra.myPath/MyFile/readString/#/PointingToDeclaration/library/libra.myPath/-my-file/read-string.html
+$dokka.location:libra.myPath/MyFile/readValue/#kotlinx.serialization.KSerializer[TypeParam(bounds=[kotlin.Any?])]#kotlinx.serialization.SerialFormat/PointingToDeclaration/library/libra.myPath/-my-file/read-value.html
+$dokka.location:libra.myPath/MyFile/source/#/PointingToDeclaration/library/libra.myPath/-my-file/source.html
+$dokka.location:libra.myPath/MyFile/toWritableOrNull/#/PointingToDeclaration/library/libra.myPath/-my-file/to-writable-or-null.html
+$dokka.location:libra.myPath/MyPath///PointingToDeclaration/library/libra.myPath/-my-path/index.html
+$dokka.location:libra.myPath/MyPath/extension/#/PointingToDeclaration/library/libra.myPath/-my-path/extension.html
+$dokka.location:libra.myPath/MyPath/fileMetadata/#/PointingToDeclaration/library/libra.myPath/-my-path/file-metadata.html
+$dokka.location:libra.myPath/MyPath/isWritable/#/PointingToDeclaration/library/libra.myPath/-my-path/is-writable.html
+$dokka.location:libra.myPath/MyPath/name/#/PointingToDeclaration/library/libra.myPath/-my-path/name.html
+$dokka.location:libra.myPath/MyPath/rawPath/#/PointingToDeclaration/library/libra.myPath/-my-path/raw-path.html
+$dokka.location:libra.myPath/MyPath/stat/#/PointingToDeclaration/library/libra.myPath/-my-path/stat.html
+$dokka.location:libra.myPath/MyRWDirectory///PointingToDeclaration/library/libra.myPath/-my-r-w-directory/index.html
+$dokka.location:libra.myPath/MyRWDirectory/mkdirs/#/PointingToDeclaration/library/libra.myPath/-my-r-w-directory/mkdirs.html
+$dokka.location:libra.myPath/MyRWDirectory/toWritableOrNull/#/PointingToDeclaration/library/libra.myPath/-my-r-w-directory/to-writable-or-null.html
+$dokka.location:libra.myPath/MyRWFile///PointingToDeclaration/library/libra.myPath/-my-r-w-file/index.html
+$dokka.location:libra.myPath/MyRWFile/sink/#kotlin.Boolean/PointingToDeclaration/library/libra.myPath/-my-r-w-file/sink.html
+$dokka.location:libra.myPath/MyRWFile/toWritableOrNull/#/PointingToDeclaration/library/libra.myPath/-my-r-w-file/to-writable-or-null.html
+$dokka.location:libra.myPath/MyRWFile/writeByteArray/#kotlin.ByteArray#kotlin.Boolean/PointingToDeclaration/library/libra.myPath/-my-r-w-file/write-byte-array.html
+$dokka.location:libra.myPath/MyRWFile/writeString/#kotlin.String#kotlin.Boolean/PointingToDeclaration/library/libra.myPath/-my-r-w-file/write-string.html
+$dokka.location:libra.myPath/MyRWFile/writeValue/#TypeParam(bounds=[kotlin.Any?])#kotlinx.serialization.KSerializer[TypeParam(bounds=[kotlin.Any?])]#kotlinx.serialization.SerialFormat#kotlin.Boolean/PointingToDeclaration/library/libra.myPath/-my-r-w-file/write-value.html
+$dokka.location:libra.myPath/MyRWPath///PointingToDeclaration/library/libra.myPath/-my-r-w-path/index.html
+$dokka.location:libra.myPath/MyRWPath/cp/#libra.myPath.MyRWPath/PointingToDeclaration/library/libra.myPath/-my-r-w-path/cp.html
+$dokka.location:libra.myPath/MyRWPath/isWritable/#/PointingToDeclaration/library/libra.myPath/-my-r-w-path/is-writable.html
+$dokka.location:libra.myPath/MyRWPath/mk/#/PointingToDeclaration/library/libra.myPath/-my-r-w-path/mk.html
+$dokka.location:libra.myPath/MyRWPath/mv/#libra.myPath.MyRWPath/PointingToDeclaration/library/libra.myPath/-my-r-w-path/mv.html
+$dokka.location:libra.myPath/MyRWPath/rm/#/PointingToDeclaration/library/libra.myPath/-my-r-w-path/rm.html
+libra.myPath

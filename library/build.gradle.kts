@@ -17,7 +17,7 @@ kotlin {
 
     jvm()
     android {
-        namespace = "libra.MyPath"
+        namespace = "libra.myPath"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 

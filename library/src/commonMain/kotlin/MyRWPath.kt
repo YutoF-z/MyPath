@@ -1,8 +1,7 @@
 package libra.myPath
 
 interface MyRWPath: MyPath {
-    override val isWritable: Boolean
-        get() = true
+    override suspend fun isWritable(): Boolean = true
 
     suspend fun mk()
     suspend fun cp(path: MyRWPath)

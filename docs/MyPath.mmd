@@ -4,116 +4,171 @@ config:
   layout: elk
 ---
 classDiagram
-  %% ===========================
-  %% Base Interfaces
-  %% ===========================
-  class MyPath {
+
+%% @Serializable
+%% @Polymorphic
+class MyPath {
     << interface >>
-    str rawPath
-    str name
-    long? size
-    bool existed
-    bool isFile
-    bool isDirectory
-    bool isWritable
+    val rawPath: String
+    override fun toString(): String = rawPath
 
-    stat() kotlinx.io.files.FileMetadata?
-    exists() bool
-    isWritable() bool
-  }
+    suspend fun stat(): FileMetadata?
 
-  class MyRWPath {
+    suspend fun name(): String?
+    suspend fun metadata(): FileMetadata?
+    suspend fun toMyDirectory(): MyDirectory?
+    suspend fun toMyFile(): MyFile?
+
+    suspend fun mv(destination: MyPath): MyPath
+    suspend fun cp(destination: MyPath): MyPath
+    suspend fun mk(): MyPath
+    suspend fun rm()
+}
+
+MyPath <|-- MyFile
+%% @Serializable
+class MyFile {
     << interface >>
-    bool isWritable = true
+    override suspend fun toMyDirectory(): MyDirectory? = null
+    override suspend fun toMyFile(): MyFile? = this
 
-    mk()
-    cp(MyPath path)
-    mv(MyPath path)
-    rm()
-  }
+    suspend fun source(): RawSource
+    suspend fun sink(append: Boolean = false): RawSink
 
-  class MyFile {
+    suspend fun <T> read(serializer: KSerializer<T>, format: StringFormat = JsonDefault): T
+        %% = withContext(Dispatchers.IO) { when(format) {
+        %%     is Json -> source().buffered().use { format.decodeFromSource(serializer, it) }
+        %%     else -> format.decodeFromString(serializer, read())
+        %% }}
+    suspend fun readByteArray(): ByteArray
+        %% = withContext(Dispatchers.IO) { source().buffered().use { it.readByteArray() } }
+    suspend fun <T> readFromBinary(serializer: KSerializer<T>, format: BinaryFormat = Cbor): T
+        %% = withContext(Dispatchers.IO) { format.decodeFromByteArray(serializer, readByteArray()) }
+    suspend fun readString(): String
+        %% = withContext(Dispatchers.IO) { source().buffered().use { it.read() } }
+    
+    suspend fun <T> write(value: T, serializer: KSerializer<T>, format: StringFormat = JsonDefault): MyFile
+        %% = withContext(Dispatchers.IO) { when(format) {
+        %%     is Json -> sink(false).buffered().use { format.encodeToSink(serializer, value, it) }
+        %%     else -> writeString(format.encodeToString(serializer, value), false)
+        %% }}
+    suspend fun writeByteArray(value: ByteArray, append: Boolean = false): MyFile
+        %% = withContext(Dispatchers.IO) { sink(append).buffered().use { it.write(value) } }
+    suspend fun writeString(value: String, append: Boolean = false): MyFile
+        %% = withContext(Dispatchers.IO) { sink(append).buffered().use { it.writeString(value) } }
+    suspend fun <T> writeToBinary(value: T, serializer: KSerializer<T>, format: BinaryFormat = Cbor): MyFile
+        %% = withContext(Dispatchers.IO) { writeByteArray(format.encodeToByteArray(serializer, value), false) }
+}
+
+MyPath <|-- MyDirectory
+%% @Serializable
+class MyDirectory {
     << interface >>
-    source() kotlinx.io.RawSource
-    readString() str
-    readByte() Byte
-    readValue~T~(SerialFormat format, KSerializer~T~ serializer) T
+    override suspend fun toMyDirectory(): MyDirectory? = this
+    override suspend fun toMyFile(): MyFile? = null
 
-    toWritable() MyRWFile
-  }
+    suspend fun list(pattern: Regex? = null): Sequence<MyPath>
+    suspend fun mkdirs(): MyDirectory
+}
+    
 
-  class MyRWFile {
-    << interface >>
-    sink(bool append)
-    writeString(str value, bool append)
-    writeByte(Byte value, bool append)
-    writeValue~T~(T value, SerialFormat format, KSerializer~T~ serializer, bool append)
-  }
+MyPath <|-- LocalPath
+%% @Serializable
+%% @SerialName("LocalPath")
+class LocalPath {
+    << expect open >>
+    constructor(
+        override val rawPath: String
+        @Transient val path: Path = Path(rawPath.stripPrefix())
+        @Transient private var metadata_: FileMetadata? = null
+    )
 
-  class MyDirectory {
-    << interface >>
-    list(str pattern) Sequence~MyPath~
-    toWritable() MyRWDirectory
-  }
+    override suspend fun stat(): FileMetadata?
+        %% = withContext(Dispatchers.IO) { 
+        %%     SystemFileSystem.metadataOrNull(path).also { metadata_ = it } 
+        %% }
 
-  class MyRWDirectory {
-    << interface >>
-    mkdirs()
-  }
+    override suspend fun name(): String?
+        %% = path.name
+    override suspend fun metadata(): FileMetadata?
+        %% = metadata_ ?: stat()
+    override open suspend fun toMyDirectory(): MyDirectory?
+        %% = if(metadata()?.isDirectory ?: false) LocalDirectory(this) else null
+    override open suspend fun toMyFile(): MyFile?
+        %% = if(metadata()?.isRegularFile ?: false) LocalFile(this) else null
 
-  %% 継承関係（interface のみ）
-  MyPath <|-- MyFile
-  MyPath <|-- MyRWPath
-  MyPath <|-- MyDirectory
-  MyFile <|-- MyRWFile
-  MyRWPath <|-- MyRWFile
-  MyRWPath <|-- MyRWDirectory
-  MyDirectory <|-- MyRWDirectory
+    override suspend fun mv(destination: MyPath): MyPath
+        %% = apply { withContext(Dispatchers.IO) { SystemFileSystem.atomicMove(path, destination) } }
+}
 
-  %% ===========================
-  %% Local (platform-specific)
-  %% ===========================
-  class LocalPath { << expect open >> }
-  class LocalFile { << expect >> }
-  class LocalRWFile { << expect >> }
-  class LocalDirectory { << expect >> }
-  class LocalRWDirectory { << expect >> }
-  
-  LocalPath <|-- LocalFile
-  LocalPath <|-- LocalDirectory
-  LocalFile <|-- LocalRWFile
-  LocalDirectory <|-- LocalRWDirectory
 
-  namespace jvm {
-    class LocalPath_j {
-      << actual >>
-      kotlinx.io.files.Path path
-    }
-  }
+LocalPath <|-- LocalFile
+MyFile <|-- LocalFile
+%% @Serializable
+%% @SerialName("LocalFile")
+class LocalFile {
+    override suspend fun toMyFile(): MyFile? = this
+    override suspend fun toMyDirectory(): MyDirectory? = null
 
-  namespace android {
-    class LocalPath_a {
-      << actual >>
-      kotlinx.io.files.Path path
-    }
-  }
+    override suspend fun source(): RawSource
+        %% = withContext(Dispatchers.IO) { SystemFileSystem.source(path) }
+    override suspend fun sink(append: Boolean = false): RawSink
+        %% = withContext(Dispatchers.IO) { SystemFileSystem.sink(path) }
 
-  %% ===========================
-  %% SMB (Rust)
-  %% ===========================
-  class SMBPath {
+    override suspend fun cp(destination: MyPath): MyPath
+        %% = apply {
+        %%     require(destination is MyFile)
+        %%     destination.writeByteArray(readByteArray())        %% }
+    override suspend fun mk(): MyPath
+        %% = apply { withContext(Dispatchers.IO) { writeString("") } }
+    override suspend fun rm()
+        %% = withContext(Dispatchers.IO) { SystemFileSystem.delete(path) } }
+}
+
+
+LocalPath <|-- LocalDirectory
+MyDirectory <|-- LocalDirectory
+%% @Serializable
+%% @SerialName("LocalDirectory")
+class LocalDirectory {
+    override suspend fun toMyDirectory(): MyDirectory? = this
+    override suspend fun toMyFile(): MyFile? = null
+
+    override suspend fun cp(destination: MyPath): MyPath
+    override suspend fun mk(): MyPath
+    override suspend fun rm()
+
+    override suspend fun list(pattern: Regex? = null): Sequence<MyPath>
+    override suspend fun mkdirs(): MyDirectory
+        %% = apply { withContext(Dispatchers.IO) { 
+        %%     SystemFileSystem createDirectories(path) 
+        %% }}
+}
+
+%% val LocalFsModule = SerializersModule {
+%%     polymorphic(MyPath::class) {
+%%         subclass(LocalPath::class)
+%%         subclass(LocalFile::class)
+%%         subclass(LocalDirectory::class)
+%%     }
+%% }
+
+
+class SmbPath {
     << open >>
     isOK() bool
   }
-  class SMBFile
-  class SMBRWFile
-  class SMBDirectory
-  class SMBRWDirectory
-  
-  SMBPath <|-- SMBFile
-  SMBPath <|-- SMBDirectory
-  SMBFile <|-- SMBRWFile
-  SMBDirectory <|-- SMBRWDirectory
+class SmbFile
+class SmbDirectory
+%% val SmbFsModule = SerializersModule {
+%%     polymorphic(MyPath::class) {
+%%         subclass(SmbPath::class)
+%%         subclass(SmbFile::class)
+%%         subclass(SmbDirectory::class)
+%%     }
+%% }
+
+
 
   %% ===========================
   %% URI (Android SAF)
@@ -124,15 +179,11 @@ classDiagram
       android.net.Uri path
     }
     class URIFile
-    class URIRWFile
     class URIDirectory
-    class URIRWDirectory
   }
   
   URIPath <|-- URIFile
   URIPath <|-- URIDirectory
-  URIFile <|-- URIRWFile
-  URIDirectory <|-- URIRWDirectory
 
   %% ===========================
   %% Asset (read-only)
@@ -171,14 +222,10 @@ classDiagram
   %% ===========================
   class TempPath { << open >> }
   class TempFile
-  class TempRWFile
   class TempDirectory
-  class TempRWDirectory
 
   TempPath <|-- TempFile
   TempPath <|-- TempDirectory
-  TempFile <|-- TempRWFile
-  TempDirectory <|-- TempRWDirectory
 
 
   %% ===========================
@@ -186,11 +233,7 @@ classDiagram
   %% ===========================
   class GoogleDrivePath { << open >> }
   class GoogleDriveFile
-  class GoogleDriveRWFile
   class GoogleDriveDirectory
-  class GoogleDriveRWDirectory
 
   GoogleDrivePath <|-- GoogleDriveFile
   GoogleDrivePath <|-- GoogleDriveDirectory
-  GoogleDriveFile <|-- GoogleDriveRWFile
-  GoogleDriveDirectory <|-- GoogleDriveRWDirectory

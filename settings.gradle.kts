@@ -19,5 +19,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "MyPath"
-include(":library")
+include(":core")
 //include(":samba")

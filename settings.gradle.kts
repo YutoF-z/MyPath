@@ -20,4 +20,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "MyPath"
 include(":core")
+include(":local")
 //include(":samba")

@@ -9,15 +9,15 @@ plugins {
 }
 
 
-group = "libra"
+group = "libra,myPath"
 version = libs.versions.project.get()
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(libs.versions.jvm.get().toInt())
 
     jvm()
     android {
-        namespace = "libra.myPath"
+        namespace = "libra.myPath.local"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -36,7 +36,8 @@ kotlin {
         commonMain.dependencies {
             //put your multiplatform dependencies here
             kotlin("reflect")
-            implementation(libs.bundles.impl)
+            implementation(libs.bundles.impl.local)
+            implementation(project(":core"))
         }
 
         commonTest.dependencies {

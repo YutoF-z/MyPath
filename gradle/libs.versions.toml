@@ -1,5 +1,6 @@
 [versions]
 project = "0.0.1"
+jvm = "25"
 
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-core
 kotlinx-serialization = "1.11.0"
@@ -37,11 +38,19 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
 
 [bundles]
-impl = [
-    "kotlinx-coroutines-core",
+impl-core = [
     "kotlinx-io-core",
+    "kotlinx-coroutines-core",
     "kotlinx-serialization-core",
-    "kotlinx-serialization-cbor",
+    "kotlinx-serialization-json",
+    "kotlinx-serialization-json-io"
+]
+
+impl-local = [
+    "okio",
+    "kotlinx-io-core",
+    "kotlinx-coroutines-core",
+    "kotlinx-serialization-core",
     "kotlinx-serialization-json",
     "kotlinx-serialization-json-io"
 ]

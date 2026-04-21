@@ -9,5 +9,5 @@ interface MyDirectory: MyPath {
     override suspend fun toMyFile(): MyFile? = null
 
     fun list(pattern: Regex? = null): Sequence<MyPath>
-    suspend fun mkdirs(): MyDirectory
+    suspend fun mkDirs(): MyDirectory
 }

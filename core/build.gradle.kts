@@ -13,7 +13,7 @@ group = "libra.myPath"
 version = libs.versions.project.get()
 
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(libs.versions.jvm.get().toInt())
 
     jvm()
     android {
@@ -36,7 +36,7 @@ kotlin {
         commonMain.dependencies {
             //put your multiplatform dependencies here
             kotlin("reflect")
-            implementation(libs.bundles.impl)
+            implementation(libs.bundles.impl.core)
         }
 
         commonTest.dependencies {

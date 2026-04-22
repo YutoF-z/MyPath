@@ -7,12 +7,11 @@ import kotlinx.serialization.Polymorphic
 @Polymorphic
 interface MyPath {
     val rawPath: String
+    val name: String?
+    val metadata: FileMetadata?
 
     suspend fun stat(): MyPath
     suspend fun statOrNull(): MyPath?
-
-    suspend fun name(): String?
-    suspend fun metadata(): FileMetadata?
     
     suspend fun toMyDirectory(): MyDirectory?
     suspend fun toMyFile(): MyFile?

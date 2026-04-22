@@ -8,7 +8,8 @@ import kotlinx.serialization.Polymorphic
 interface MyPath {
     val rawPath: String
 
-    suspend fun stat(): MyPath?
+    suspend fun stat(): MyPath
+    suspend fun statOrNull(): MyPath?
 
     suspend fun name(): String?
     suspend fun metadata(): FileMetadata?

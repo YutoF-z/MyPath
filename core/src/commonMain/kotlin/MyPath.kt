@@ -17,6 +17,7 @@ interface MyPath {
 
     suspend fun stat(): MyPath
     suspend fun statOrNull(): MyPath?
+    suspend fun metadataOrNull(): FileMetadata?
     
     suspend fun toMyDirectory(): MyDirectory?
     suspend fun toMyFile(): MyFile?

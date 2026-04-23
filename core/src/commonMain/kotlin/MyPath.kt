@@ -2,12 +2,17 @@ package libra.myPath
 
 import kotlinx.io.files.FileMetadata
 import kotlinx.serialization.Polymorphic
+import kotlinx.serialization.Transient
 
 
 @Polymorphic
 interface MyPath {
     val rawPath: String
+
+    @Transient
     val name: String?
+
+    @Transient
     val metadata: FileMetadata?
 
     suspend fun stat(): MyPath

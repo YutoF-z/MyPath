@@ -13,11 +13,23 @@ import kotlinx.serialization.Transient
 
 @Serializable
 @SerialName("LocalPath")
-open class LocalPath(
+open class LocalPath private constructor(
     override val rawPath: String,
-    @Transient val path: Path = Path(rawPath.stripPrefix()),
-    _metadata: FileMetadata? = null
+    @Transient val path: Path = Path(rawPath.stripPrefix())
 ): MyPath {
+    @Transient
+    override val name: String = path.name
+    @Transient
+    final override var metadata: FileMetadata? = null
+        private set
+
+    constructor(
+        rawPath: String,
+        _metadata: FileMetadata? = null
+    ): this(rawPath) {
+        metadata = _metadata
+    }
+
     override suspend fun stat(): LocalPath = statOrNull() ?: this
     override suspend fun statOrNull(): LocalPath? {
         withContext(Dispatchers.IO) {
@@ -27,34 +39,29 @@ open class LocalPath(
         return asMyFile() ?: asMyDirectory()
     }
 
-    @Transient
-    override val name: String = path.name
-
-
-    @Transient
-    final override var metadata: FileMetadata? = _metadata
-        private set
+    override suspend fun metadataOrNull(): FileMetadata? =
+        metadata ?: stat().metadata
 
     open override suspend fun toMyDirectory(): MyDirectory? = 
-        when(metadata()?.isDirectory ?: true) {
+        when(metadataOrNull()?.isDirectory ?: true) {
             true -> LocalDirectory(this)
             false -> null
         }
     open override suspend fun toMyFile(): MyFile? = 
-        when(metadata()?.isRegularFile ?: true) {
+        when(metadataOrNull()?.isRegularFile ?: true) {
             true -> LocalFile(this)
             false -> null
         }
     
     open override suspend fun asMyDirectory(): LocalDirectory? = 
         this as? LocalDirectory 
-        ?: when(metadata()?.isDirectory ?: false) {
+        ?: when(metadataOrNull()?.isDirectory ?: false) {
             true -> LocalDirectory(this)
             false -> null
         }
     open override suspend fun asMyFile(): LocalFile? = 
         this as? LocalFile 
-        ?: when(metadata()?.isRegularFile ?: false) {
+        ?: when(metadataOrNull()?.isRegularFile ?: false) {
             true -> LocalFile(this)
             false -> null
         }
@@ -63,7 +70,10 @@ open class LocalPath(
         statOrNull() ?: throw FileNotFoundException(rawPath)
         
         when {
-            metadata()?.isDirectory && 
+            metadataOrNull()?.isDirectory && destination.metadataOrNull()?.isRegularFile ->
+                error("Filetype Not match")
+            metadataOrNull()?.isRegularFile && destination.metadataOrNull()?.isDirectory ->
+                error("Filetype Not match")
             destination is LocalPath -> withContext(Dispatchers.IO) { 
                 SystemFileSystem.atomicMove(path, destination.path)
             }         

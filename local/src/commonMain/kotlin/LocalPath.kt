@@ -69,7 +69,7 @@ open class LocalPath private constructor(
             false -> null
         }
 
-    override suspend fun mv(destination: MyPath): MyPath {
+    open override suspend fun mv(destination: MyPath): MyPath {
         statOrNull() ?: throw FileNotFoundException(rawPath)
         
         when {
@@ -101,10 +101,12 @@ open class LocalPath private constructor(
         return destination
     }
     
-    open override suspend fun mk(dir:Boolean = true): MyPath = apply {
+    override suspend fun mk(dir:Boolean = true): MyPath = apply {
         when(dir) {
-            true -> SystemFileSystem.createDirectories(path, false)
-            false -> toMyFile()?.writeString("")
+            true -> withContext(Dispatchers.IO) { 
+                SystemFileSystem.createDirectories(path, false)
+            }
+            false -> toMyFile()?.writeByteArray([], true)
         }
     }
     

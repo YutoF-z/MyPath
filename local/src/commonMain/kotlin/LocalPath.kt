@@ -14,9 +14,10 @@ import kotlinx.serialization.Transient
 @Serializable
 @SerialName("LocalPath")
 open class LocalPath private constructor(
-    override val rawPath: String,
-    @Transient val path: Path = Path(rawPath.stripPrefix())
+    override val rawPath: String
 ): MyPath {
+    @Transient 
+    val path: Path = Path(rawPath.stripPrefix())
     @Transient
     override val name: String = path.name
     @Transient
@@ -43,12 +44,14 @@ open class LocalPath private constructor(
         metadata ?: stat().metadata
 
     open override suspend fun toMyDirectory(): MyDirectory? = 
-        when(metadataOrNull()?.isDirectory ?: true) {
+        this as? LocalDirectory 
+        ?: when(metadataOrNull()?.isDirectory ?: true) {
             true -> LocalDirectory(this)
             false -> null
         }
     open override suspend fun toMyFile(): MyFile? = 
-        when(metadataOrNull()?.isRegularFile ?: true) {
+        this as? LocalFile 
+        ?: when(metadataOrNull()?.isRegularFile ?: true) {
             true -> LocalFile(this)
             false -> null
         }
@@ -70,16 +73,46 @@ open class LocalPath private constructor(
         statOrNull() ?: throw FileNotFoundException(rawPath)
         
         when {
-            metadataOrNull()?.isDirectory && destination.metadataOrNull()?.isRegularFile ->
+            metadata?.isDirectory && destination.metadataOrNull()?.isRegularFile ->
                 error("Filetype Not match")
-            metadataOrNull()?.isRegularFile && destination.metadataOrNull()?.isDirectory ->
+            metadata?.isRegularFile && destination.metadataOrNull()?.isDirectory ->
                 error("Filetype Not match")
+                
             destination is LocalPath -> withContext(Dispatchers.IO) { 
                 SystemFileSystem.atomicMove(path, destination.path)
-            }         
+            }
+            metadata?.isRegularFile -> toMyFile()?.mv(destination)
+            else -> toMyDirectory()?.mv(destination)
+        }
+        return destination
+    }
+    
+    open override suspend fun cp(destination: MyPath): MyPath {
+        statOrNull() ?: throw FileNotFoundException(rawPath)
+        
+        when {
+            metadata?.isDirectory && destination.metadataOrNull()?.isRegularFile ->
+                error("Filetype Not match")
+            metadata?.isRegularFile && destination.metadataOrNull()?.isDirectory ->
+                error("Filetype Not match")
+            metadata?.isRegularFile -> toMyFile()?.cp(destination)
+            else -> toMyDirectory()?.cp(destination)
+        }
+        return destination
+    }
+    
+    open override suspend fun mk(dir:Boolean = true): MyPath = apply {
+        when(dir) {
+            true -> SystemFileSystem.createDirectories(path, false)
+            false -> toMyFile()?.writeString("")
         }
     }
-    override suspend fun cp(destination: MyPath): MyPath
-    override suspend fun mk(): MyPath
-    override suspend fun rm()
+    
+    open override suspend fun rm() {
+        statOrNull() ?: throw FileNotFoundException(rawPath)
+        when(metadata?.isRegularFile) {
+            true -> toMyFile()?.rm()
+            false -> toMyDirectory()?.rm()
+        }
+    }
 }

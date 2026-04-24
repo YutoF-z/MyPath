@@ -18,8 +18,8 @@ open class LocalPath private constructor(
 ): MyPath {
     @Transient 
     val path: Path = Path(rawPath.stripPrefix())
-    @Transient
-    override val name: String = path.name
+    
+    override val name: String get() = path.name
     @Transient
     final override var metadata: FileMetadata? = null
         private set
@@ -72,8 +72,8 @@ open class LocalPath private constructor(
             destination is LocalPath -> withContext(Dispatchers.IO) { 
                 SystemFileSystem.atomicMove(path, destination.path)
             }
-            metadata?.isRegularFile -> toMyFile()?.mv(destination)
-            else -> toMyDirectory()?.mv(destination)
+            metadata?.isRegularFile -> asMyFile()?.mv(destination)
+            else -> asMyDirectory()?.mv(destination)
         }
         return destination
     }
@@ -86,8 +86,8 @@ open class LocalPath private constructor(
                 error("Filetype Not match")
             metadata?.isRegularFile && destination.metadataOrNull()?.isDirectory ->
                 error("Filetype Not match")
-            metadata?.isRegularFile -> toMyFile()?.cp(destination)
-            else -> toMyDirectory()?.cp(destination)
+            metadata?.isRegularFile -> asMyFile()?.cp(destination)
+            else -> asMyDirectory()?.cp(destination)
         }
         return destination
     }
@@ -97,15 +97,15 @@ open class LocalPath private constructor(
             true -> withContext(Dispatchers.IO) { 
                 SystemFileSystem.createDirectories(path, false)
             }
-            false -> toMyFile()?.writeByteArray([], true)
+            false -> asMyFile(false)?.writeByteArray(byteArrayOf(), true)
         }
     }
     
     open override suspend fun rm() {
         statOrNull() ?: throw FileNotFoundException(rawPath)
         when(metadata?.isRegularFile) {
-            true -> toMyFile()?.rm()
-            false -> toMyDirectory()?.rm()
+            true -> asMyFile()?.rm()
+            false -> asMyDirectory()?.rm()
         }
     }
 }

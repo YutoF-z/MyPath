@@ -1,4 +1,4 @@
-package libra.myPath
+package libra.myPath.local
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -43,28 +43,19 @@ open class LocalPath private constructor(
     override suspend fun metadataOrNull(): FileMetadata? =
         metadata ?: stat().metadata
 
-    open override suspend fun toMyDirectory(): MyDirectory? = 
+    open override suspend fun asMyDirectory(
+        mustExist: Boolean = true
+    ): LocalDirectory? = 
         this as? LocalDirectory 
-        ?: when(metadataOrNull()?.isDirectory ?: true) {
+        ?: when(metadataOrNull()?.isDirectory ?: !mustExist) {
             true -> LocalDirectory(this)
             false -> null
         }
-    open override suspend fun toMyFile(): MyFile? = 
+    open override suspend fun asMyFile(
+        mustExist: Boolean = true
+    ): LocalFile? = 
         this as? LocalFile 
-        ?: when(metadataOrNull()?.isRegularFile ?: true) {
-            true -> LocalFile(this)
-            false -> null
-        }
-    
-    open override suspend fun asMyDirectory(): LocalDirectory? = 
-        this as? LocalDirectory 
-        ?: when(metadataOrNull()?.isDirectory ?: false) {
-            true -> LocalDirectory(this)
-            false -> null
-        }
-    open override suspend fun asMyFile(): LocalFile? = 
-        this as? LocalFile 
-        ?: when(metadataOrNull()?.isRegularFile ?: false) {
+        ?: when(metadataOrNull()?.isRegularFile ?: !mustExist) {
             true -> LocalFile(this)
             false -> null
         }

@@ -19,11 +19,8 @@ interface MyPath {
     suspend fun statOrNull(): MyPath?
     suspend fun metadataOrNull(): FileMetadata?
     
-    suspend fun toMyDirectory(): MyDirectory?
-    suspend fun toMyFile(): MyFile?
-    
-    suspend fun asMyDirectory(): MyDirectory?
-    suspend fun asMyFile(): MyFile?
+    suspend fun asMyDirectory(mustExist: Boolean = true): MyDirectory?
+    suspend fun asMyFile(mustExist: Boolean = true): MyFile?
 
     suspend fun mv(destination: MyPath): MyPath
     suspend fun cp(destination: MyPath): MyPath

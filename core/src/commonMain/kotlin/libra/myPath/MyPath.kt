@@ -1,8 +1,8 @@
 package libra.myPath
 
-import kotlinx.io.files.FileMetadata
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Transient
+import okio.FileMetadata
 
 
 @Polymorphic
@@ -15,15 +15,18 @@ interface MyPath {
     @Transient
     val metadata: FileMetadata?
 
-    suspend fun stat(): MyPath
+
+
+    suspend fun stat(): MyPath = statOrNull() ?: this
+    suspend fun metadataOrNull(): FileMetadata? = metadata ?: stat().metadata
+
     suspend fun statOrNull(): MyPath?
-    suspend fun metadataOrNull(): FileMetadata?
     
     suspend fun asMyDirectory(mustExist: Boolean = true): MyDirectory?
     suspend fun asMyFile(mustExist: Boolean = true): MyFile?
 
     suspend fun mv(destination: MyPath): MyPath
     suspend fun cp(destination: MyPath): MyPath
-    suspend fun mk(): MyPath
+    suspend fun mk(dir:Boolean = true): MyPath
     suspend fun rm()
 }

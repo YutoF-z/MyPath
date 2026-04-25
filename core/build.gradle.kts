@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -16,6 +15,7 @@ kotlin {
     jvmToolchain(libs.versions.jvm.get().toInt())
 
     jvm()
+
     android {
         namespace = "libra.myPath"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -41,6 +41,10 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.bundles.impl.android)
         }
     }
 }

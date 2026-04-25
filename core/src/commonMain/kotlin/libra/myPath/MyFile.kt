@@ -15,15 +15,13 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.io.decodeFromSource
-import kotlinx.serialization.json.io.encodeToSink
 import kotlinx.serialization.serializer
 
 
 @Polymorphic
 interface MyFile : MyPath {
-    override suspend fun toMyDirectory(): MyDirectory? = null
-    override suspend fun toMyFile(): MyFile? = this
+    override suspend fun asMyDirectory(mustExist: Boolean): MyDirectory? = null
+    override suspend fun asMyFile(mustExist: Boolean): MyFile? = this
 
     suspend fun source(): RawSource
     suspend fun sink(append: Boolean = false): RawSink

@@ -8,11 +8,11 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okio.FileMetadata
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import libra.myPath.MyPath
+import okio.FileMetadata
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -58,7 +58,7 @@ sealed class UriMyPath : MyPath {
 
                     FileMetadata(
                         isDirectory = isDirectory,
-                        isRegularFile = !isDirectory &&,
+                        isRegularFile = !isDirectory && ,
                         size = cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE))
                     )
                 } else null

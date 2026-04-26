@@ -3,14 +3,14 @@ package libra.myPath.uriPath
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
-import kotlinx.io.RawSink
-import kotlinx.io.RawSource
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyFile
 import libra.myPath.MyPath
+import okio.Sink
+import okio.Source
 
 @Serializable
 @SerialName("UriFile")
@@ -24,13 +24,13 @@ class UriFile(
         DocumentFile.fromSingleUri(context, uri)
     }
 
-    override suspend fun source(): RawSource {
+    override suspend fun source(): Source {
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw Exception("Failed to open input stream")
         return inputStream.asSource()
     }
 
-    override suspend fun sink(append: Boolean): RawSink {
+    override suspend fun sink(): Sink {
         val mode = if (append) "wa" else "w"
         val outputStream = context.contentResolver.openOutputStream(uri, mode)
             ?: throw Exception("Failed to open output stream")

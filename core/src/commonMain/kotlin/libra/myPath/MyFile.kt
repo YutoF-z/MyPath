@@ -3,28 +3,27 @@ package libra.myPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import kotlinx.io.RawSink
-import kotlinx.io.RawSource
-import kotlinx.io.buffered
-import kotlinx.io.readByteArray
-import kotlinx.io.readString
-import kotlinx.io.writeString
 import kotlinx.serialization.BinaryFormat
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.okio.decodeFromBufferedSource
+import kotlinx.serialization.json.okio.encodeToBufferedSink
 import kotlinx.serialization.serializer
-
+import okio.Sink
+import okio.Source
+import okio.buffer
+import okio.use
 
 @Polymorphic
 interface MyFile : MyPath {
     override suspend fun asMyDirectory(mustExist: Boolean): MyDirectory? = null
     override suspend fun asMyFile(mustExist: Boolean): MyFile? = this
 
-    suspend fun source(): RawSource
-    suspend fun sink(append: Boolean = false): RawSink
+    suspend fun source(): Source
+    suspend fun sink(): Sink
 
 
     suspend fun <T> read(
@@ -38,24 +37,24 @@ interface MyFile : MyPath {
         format: StringFormat
     ): T = when (format) {
         is Json -> withContext(Dispatchers.IO) {
-            source().buffered().use { format.decodeFromSource(serializer, it) }
+            source().buffer().use { format.decodeFromBufferedSource(serializer, it) }
         }
 
         else -> format.decodeFromString(serializer, readString())
     }
 
     suspend fun readByteArray(): ByteArray =
-        withContext(Dispatchers.IO) { source().buffered().use { it.readByteArray() } }
+        withContext(Dispatchers.IO) { source().buffer().use { it.readByteArray() } }
 
     suspend fun readString(): String =
-        withContext(Dispatchers.IO) { source().buffered().use { it.readString() } }
+        withContext(Dispatchers.IO) { source().buffer().use { it.readUtf8() } }
 
 
     suspend fun <T> write(
         value: T,
         serializer: KSerializer<T>,
         format: BinaryFormat
-    ): MyFile = writeByteArray(
+    ): MyFile = write(
         format.encodeToByteArray(serializer, value),
         false
     )
@@ -68,28 +67,37 @@ interface MyFile : MyPath {
     ): MyFile = apply {
         when (format) {
             is Json -> withContext(Dispatchers.IO) {
-                sink(false).buffered().use { format.encodeToSink(serializer, value, it) }
+                sink().buffer().use { format.encodeToBufferedSink(serializer, value, it) }
             }
 
-            else -> writeString(format.encodeToString(serializer, value), false)
+            else -> write(format.encodeToString(serializer, value), false)
         }
     }
 
-    suspend fun writeByteArray(
+    suspend fun write(
         value: ByteArray,
         append: Boolean = false
     ): MyFile = apply {
         withContext(Dispatchers.IO) {
-            sink(append).buffered().use { it.write(value) }
+            sink().buffer().use { it.write(value) }
         }
     }
 
-    suspend fun writeString(
+    suspend fun write(
         value: String,
         append: Boolean = false
     ): MyFile = apply {
         withContext(Dispatchers.IO) {
-            sink(append).buffered().use { it.writeString(value) }
+            sink().buffer().use { it.writeUtf8(value) }
+        }
+    }
+
+    suspend fun write(
+        source: Source,
+        append: Boolean = false
+    ): MyFile = apply {
+        withContext(Dispatchers.IO) {
+            sink().buffer().use { it.writeAll(source) }
         }
     }
 }

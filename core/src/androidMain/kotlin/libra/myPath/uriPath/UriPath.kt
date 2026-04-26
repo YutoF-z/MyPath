@@ -2,18 +2,16 @@ package libra.myPath.uriPath
 
 import android.net.Uri
 import android.provider.DocumentsContract
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
-import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import libra.myPath.MyPath
 
 @Serializable
 @SerialName("UriPath")
 class UriPath(
     override val rawPath: String
-): UriMyPath() {
+) : UriMyPath() {
     override suspend fun asMyDirectory(mustExist: Boolean): UriDirectory? = null
     override suspend fun asMyFile(mustExist: Boolean): UriFile? = this
 

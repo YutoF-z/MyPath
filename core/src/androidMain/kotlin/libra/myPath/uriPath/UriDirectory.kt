@@ -13,7 +13,7 @@ import libra.myPath.MyPath
 @SerialName("UriFile")
 class UriDirectory(
     override val rawPath: String
-): UriMyPath(), MyDirectory {
+) : UriMyPath(), MyDirectory {
     override suspend fun asMyDirectory(mustExist: Boolean): UriDirectory = this
     override suspend fun asMyFile(mustExist: Boolean): UriFile? = null
 

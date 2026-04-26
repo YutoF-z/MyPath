@@ -3,22 +3,9 @@ package libra.myPath.uriPath
 import android.os.Build
 import android.provider.DocumentsContract.Document
 import androidx.annotation.RequiresApi
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Instant
 
-data class UriMetadata(
-    val flags: Int,
-    val lastModified: Long,
-    val mimeType: String
-) {
-    val strTime: LocalDateTime
-        get() = Instant.fromEpochMilliseconds(lastModified).toLocalDateTime(TimeZone.currentSystemDefault())
-
-    val isDirectory: Boolean get() = mimeType == Document.MIME_TYPE_DIR
-    val extension: String get() = mimeType.substringAfterLast('/')
-
+@JvmInline
+value class UriFlags(val flags: Int) {
     val flagDirBlocksOpenDocumentTree: Boolean
         @RequiresApi(Build.VERSION_CODES.R)
         get() = flags and Document.FLAG_DIR_BLOCKS_OPEN_DOCUMENT_TREE != 0

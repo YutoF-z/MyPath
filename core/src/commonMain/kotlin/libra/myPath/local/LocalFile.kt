@@ -1,11 +1,11 @@
 package libra.myPath.local
 
-import kotlinx.io.RawSink
-import kotlinx.io.RawSource
-import okio.FileMetadata
 import kotlinx.serialization.SerialName
 import libra.myPath.MyFile
 import libra.myPath.MyPath
+import okio.FileMetadata
+import okio.Sink
+import okio.Source
 
 
 @SerialName("LocalFile")
@@ -34,11 +34,11 @@ class LocalFile(
         TODO("Not yet implemented")
     }
 
-    override suspend fun source(): RawSource {
+    override suspend fun source(): Source {
         TODO("Not yet implemented")
     }
 
-    override suspend fun sink(append: Boolean): RawSink {
+    override suspend fun sink(): Sink {
         TODO("Not yet implemented")
     }
 }

@@ -30,7 +30,7 @@ sealed class LocalPath(
     }
 
     override suspend fun mv(destination: MyPath): MyPath {
-        statOrNull() ?: throw FileNotFoundException(rawPath)
+        metadataOrNull() ?: throw FileNotFoundException(rawPath)
 
         when {
             metadata!!.isDirectory && destination.metadataOrNull()?.isRegularFile == true ->
@@ -50,7 +50,7 @@ sealed class LocalPath(
     }
 
     override suspend fun cp(destination: MyPath): MyPath {
-        statOrNull() ?: throw FileNotFoundException(rawPath)
+        metadataOrNull() ?: throw FileNotFoundException(rawPath)
 
         when {
             metadata!!.isDirectory && destination.metadataOrNull()?.isRegularFile == true ->
@@ -66,7 +66,7 @@ sealed class LocalPath(
     }
 
     override suspend fun rm() {
-        statOrNull() ?: throw FileNotFoundException(rawPath)
+        metadataOrNull() ?: throw FileNotFoundException(rawPath)
         when (metadata!!.isRegularFile) {
             true -> asMyFile()?.rm()
             false -> asMyDirectory()?.rm()

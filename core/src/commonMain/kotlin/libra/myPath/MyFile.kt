@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.okio.decodeFromBufferedSource
 import kotlinx.serialization.json.okio.encodeToBufferedSink
 import kotlinx.serialization.serializer
+import okio.FileNotFoundException
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -23,8 +24,21 @@ interface MyFile : MyPath {
     override suspend fun asMyFile(mustExist: Boolean): MyFile? = this
 
     suspend fun source(): Source
-    suspend fun sink(): Sink
+    suspend fun sink(append: Boolean = false): Sink
 
+
+    suspend fun mv(destination: MyFile): MyFile
+    override suspend fun mv(destination: MyPath): MyPath? = when {
+        destination is MyFile -> mv(destination)
+        destination.metadata?.isDirectory != true -> mv(destination.asMyFile(false)!!)
+        else -> null
+    }
+    suspend fun cp(destination: MyFile): MyFile
+    override suspend fun cp(destination: MyPath): MyPath? = when {
+        destination is MyFile -> cp(destination)
+        destination.metadata?.isDirectory != true -> cp(destination.asMyFile(false)!!)
+        else -> null
+    }
 
     suspend fun <T> read(
         serializer: KSerializer<T>,

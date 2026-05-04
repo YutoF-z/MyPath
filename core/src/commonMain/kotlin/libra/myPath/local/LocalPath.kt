@@ -12,7 +12,7 @@ import okio.SYSTEM
 
 @Serializable
 @SerialName("LocalPath")
-sealed class LocalPath(
+class LocalPath(
     override val rawPath: String
 ) : LocalMyPath() {
     override suspend fun asMyDirectory(

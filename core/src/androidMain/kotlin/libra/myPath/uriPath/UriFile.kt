@@ -1,5 +1,6 @@
 package libra.myPath.uriPath
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
@@ -11,6 +12,7 @@ import libra.myPath.MyFile
 import libra.myPath.MyPath
 import okio.Sink
 import okio.Source
+import okio.sink
 
 @Serializable
 @SerialName("UriFile")
@@ -30,11 +32,12 @@ class UriFile(
         return inputStream.asSource()
     }
 
+    @SuppressLint("Recycle")
     override suspend fun sink(): Sink {
         val mode = if (append) "wa" else "w"
         val outputStream = context.contentResolver.openOutputStream(uri, mode)
             ?: throw Exception("Failed to open output stream")
-        return outputStream.asSink()
+        return outputStream.sink()
     }
 
 

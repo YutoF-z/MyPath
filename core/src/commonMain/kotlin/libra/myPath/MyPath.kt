@@ -3,6 +3,7 @@ package libra.myPath
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Transient
 import okio.FileMetadata
+import okio.FileNotFoundException
 
 
 @Polymorphic
@@ -24,8 +25,8 @@ interface MyPath {
     suspend fun asMyDirectory(mustExist: Boolean = true): MyDirectory?
     suspend fun asMyFile(mustExist: Boolean = true): MyFile?
 
-    suspend fun mv(destination: MyPath): MyPath
-    suspend fun cp(destination: MyPath): MyPath
-    suspend fun mk(dir: Boolean = true): MyPath
+    suspend fun mv(destination: MyPath): MyPath?
+    suspend fun cp(destination: MyPath): MyPath?
+    suspend fun mk(dir: Boolean = true): MyPath?
     suspend fun rm()
 }

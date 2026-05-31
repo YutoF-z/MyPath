@@ -16,7 +16,6 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.use
-import kotlin.apply
 
 @Polymorphic
 interface MyFile : MyPathInterface {

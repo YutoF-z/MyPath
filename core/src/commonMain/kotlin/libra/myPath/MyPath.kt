@@ -25,6 +25,7 @@ suspend fun MyPath.moveFrom(destination: MyPathInterface): MyPathInterface? = on
             is MyFile -> moveFrom(destination)
             is MyPath if destination.metadataOrNull()?.isDirectory == false ->
                 destination.asMyFile(false)?.let { moveFrom(it) }
+
             else -> null
         }
     },
@@ -33,6 +34,7 @@ suspend fun MyPath.moveFrom(destination: MyPathInterface): MyPathInterface? = on
             is MyDirectory -> moveFrom(destination)
             is MyPath if destination.metadataOrNull()?.isRegularFile == false ->
                 destination.asMyDirectory(false)?.let { moveFrom(it) }
+
             else -> null
         }
     },
@@ -54,6 +56,7 @@ suspend fun MyPath.copyFrom(destination: MyPathInterface): MyPathInterface? = on
             is MyDirectory -> copyFrom(destination)
             is MyPath if destination.metadataOrNull()?.isRegularFile == false ->
                 destination.asMyDirectory(false)?.let { copyFrom(it) }
+
             else -> null
         }
     },

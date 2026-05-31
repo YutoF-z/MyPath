@@ -1,5 +1,8 @@
 package libra.myPath.local
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,8 +25,12 @@ class LocalDirectory(
         this@LocalDirectory.metadata = metadata
     }
 
-    override suspend fun asMyDirectory(mustExist: Boolean): LocalDirectory = this
-    override suspend fun asMyFile(mustExist: Boolean): LocalFile? = null
+
+    override suspend fun mk(): MyDirectory = apply {
+        withContext(Dispatchers.IO) {
+            FileSystem.SYSTEM.createDirectories(path, false)
+        }
+    }
 
 
     override suspend fun copyFrom(destination: MyDirectory): MyDirectory = apply {
@@ -39,6 +46,10 @@ class LocalDirectory(
         FileSystem.SYSTEM.list(path).forEach {
             yield()
         } }
+
+    override fun listRecursively(pattern: Regex?): Sequence<MyPathInterface> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun moveFrom(destination: MyDirectory): MyDirectory = apply {
         if (destination is LocalDirectory) {

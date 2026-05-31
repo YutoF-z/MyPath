@@ -24,25 +24,16 @@ sealed class LocalMyPath : MyPathInterface {
     final override val name: String get() = path.name
 
     @Transient
-    final override var metadata: FileMetadata? = null
+    var metadata: FileMetadata? = null
         protected set
+
+    override suspend fun metadataOrNull(): FileMetadata? = metadata ?: statOrNull()?.metadata
 
     final override fun toString(): String = rawPath
 
-    final override suspend fun statOrNull(): MyPathInterface? {
+    final override suspend fun statOrNull(): LocalMyPath? {
         metadata = withContext(Dispatchers.IO) { FileSystem.SYSTEM.metadataOrNull(path) }
         metadata ?: return null
-        return asMyFile() ?: asMyDirectory()
-    }
-
-
-    final override suspend fun mk(dir: Boolean): MyPathInterface = apply {
-        when (dir) {
-            true -> withContext(Dispatchers.IO) {
-                FileSystem.SYSTEM.createDirectories(path, false)
-            }
-
-            false -> asMyFile(false)?.write(byteArrayOf(), true)
-        }
+        return this
     }
 }

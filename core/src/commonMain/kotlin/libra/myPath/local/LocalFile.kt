@@ -1,5 +1,8 @@
 package libra.myPath.local
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import libra.myPath.MyFile
 import okio.FileMetadata
@@ -21,33 +24,25 @@ class LocalFile(
         this@LocalFile.metadata = metadata
     }
 
-    override suspend fun asMyDirectory(mustExist: Boolean): LocalDirectory? = null
-    override suspend fun asMyFile(mustExist: Boolean): LocalFile = this
-
-    override suspend fun source(): Source = FileSystem.SYSTEM.source(path)
-
-    override suspend fun sink(append: Boolean): Sink = when(append) {
-        true -> FileSystem.SYSTEM.appendingSink(path)
-        false -> FileSystem.SYSTEM.sink(path)
+    override suspend fun source(): Source = withContext(Dispatchers.IO) {
+        FileSystem.SYSTEM.source(path)
     }
 
-    override suspend fun rm() = FileSystem.SYSTEM.delete(path)
-
-
-    override suspend fun moveFrom(destination: MyFile): MyFile = apply {
-        if (destination is LocalFile) {
-            FileSystem.SYSTEM.atomicMove(path, destination.path)
-        } else {
-            destination.write(source())
-            rm()
+    override suspend fun sink(append: Boolean): Sink = withContext(Dispatchers.IO) {
+        when (append) {
+            true -> FileSystem.SYSTEM.appendingSink(path)
+            false -> FileSystem.SYSTEM.sink(path)
         }
     }
 
-    override suspend fun copyFrom(destination: MyFile): MyFile = apply {
-        if (destination is LocalFile) {
-            FileSystem.SYSTEM.copy(path, destination.path)
-        } else {
-            destination.write(source())
-        }
+    override suspend fun rm() = withContext(Dispatchers.IO) { FileSystem.SYSTEM.delete(path) }
+
+
+    suspend fun moveTo(destination: LocalFile): MyFile = apply {
+        withContext(Dispatchers.IO) { FileSystem.SYSTEM.atomicMove(path, destination.path) }
+    }
+
+    suspend fun copyTo(destination: LocalFile): MyFile = apply {
+        withContext(Dispatchers.IO) { FileSystem.SYSTEM.copy(path, destination.path) }
     }
 }

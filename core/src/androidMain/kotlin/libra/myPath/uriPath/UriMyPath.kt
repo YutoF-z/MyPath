@@ -11,14 +11,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import libra.myPath.MyPath
+import libra.myPath.MyPathInterface
 import okio.FileMetadata
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 @Serializable
 @SerialName("UriMyPath")
-sealed class UriMyPath : MyPath {
+sealed class UriMyPath : MyPathInterface {
     @Transient
     val uri: Uri = rawPath.toUri()
     abstract val documentFile: DocumentFile?
@@ -37,7 +37,7 @@ sealed class UriMyPath : MyPath {
         protected set
 
 
-    override suspend fun statOrNull(): MyPath? {
+    override suspend fun statOrNull(): MyPathInterface? {
 //    Document.COLUMN_DISPLAY_NAME
 //    Document.COLUMN_FLAGS
 //    Document.COLUMN_LAST_MODIFIED

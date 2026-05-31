@@ -7,7 +7,7 @@ import okio.FileNotFoundException
 import okio.FileSystem
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import libra.myPath.MyPath
+import libra.myPath.MyPathInterface
 import okio.SYSTEM
 
 @Serializable
@@ -29,7 +29,7 @@ class LocalPath(
         false -> null
     }
 
-    override suspend fun mv(destination: MyPath): MyPath {
+    override suspend fun mvFrom(destination: MyPathInterface): MyPathInterface {
         metadataOrNull() ?: throw FileNotFoundException(rawPath)
 
         when {
@@ -43,13 +43,13 @@ class LocalPath(
                 FileSystem.SYSTEM.atomicMove(path, destination.path)
             }
 
-            metadata!!.isRegularFile -> asMyFile()?.mv(destination)
-            else -> asMyDirectory()?.mv(destination)
+            metadata!!.isRegularFile -> asMyFile()?.moveFrom(destination)
+            else -> asMyDirectory()?.moveFrom(destination)
         }
         return destination
     }
 
-    override suspend fun cp(destination: MyPath): MyPath {
+    override suspend fun cpFrom(destination: MyPathInterface): MyPathInterface {
         metadataOrNull() ?: throw FileNotFoundException(rawPath)
 
         when {
@@ -59,8 +59,8 @@ class LocalPath(
             metadata!!.isRegularFile && destination.metadataOrNull()?.isDirectory == true ->
                 error("Filetype Not match")
 
-            metadata!!.isRegularFile -> asMyFile()?.cp(destination)
-            else -> asMyDirectory()?.cp(destination)
+            metadata!!.isRegularFile -> asMyFile()?.copyFrom(destination)
+            else -> asMyDirectory()?.copyFrom(destination)
         }
         return destination
     }

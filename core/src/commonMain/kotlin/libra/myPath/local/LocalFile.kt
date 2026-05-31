@@ -2,7 +2,6 @@ package libra.myPath.local
 
 import kotlinx.serialization.SerialName
 import libra.myPath.MyFile
-import libra.myPath.MyPath
 import okio.FileMetadata
 import okio.FileSystem
 import okio.SYSTEM
@@ -35,7 +34,7 @@ class LocalFile(
     override suspend fun rm() = FileSystem.SYSTEM.delete(path)
 
 
-    override suspend fun mv(destination: MyFile): MyFile = apply {
+    override suspend fun moveFrom(destination: MyFile): MyFile = apply {
         if (destination is LocalFile) {
             FileSystem.SYSTEM.atomicMove(path, destination.path)
         } else {
@@ -44,7 +43,7 @@ class LocalFile(
         }
     }
 
-    override suspend fun cp(destination: MyFile): MyFile = apply {
+    override suspend fun copyFrom(destination: MyFile): MyFile = apply {
         if (destination is LocalFile) {
             FileSystem.SYSTEM.copy(path, destination.path)
         } else {

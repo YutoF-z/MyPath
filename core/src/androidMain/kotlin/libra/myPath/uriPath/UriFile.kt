@@ -4,12 +4,11 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
-import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyFile
-import libra.myPath.MyPath
+import libra.myPath.MyPathInterface
 import okio.Sink
 import okio.Source
 import okio.sink
@@ -41,7 +40,7 @@ class UriFile(
     }
 
 
-    override suspend fun mk(dir: Boolean): MyPath {
+    override suspend fun mk(dir: Boolean): MyPathInterface {
         // parentUri と displayName を分離して DocumentsContract.createDocument を呼ぶ実装が必要
         // 簡易的には DocumentFile.createFile / createDirectory を使用
         val parentUri = getParentUri(uri) // 補助関数で親のURIを取得
@@ -53,7 +52,7 @@ class UriFile(
         return UriMyPath(context, newFile.uri)
     }
 
-    override suspend fun mv(destination: MyPath): MyPath {
+    override suspend fun mvFrom(destination: MyPathInterface): MyPathInterface {
         val destUri = Uri.parse(destination.rawPath)
         val parentUri = getParentUri(uri)
         val destParentUri = getParentUri(destUri)
@@ -66,7 +65,7 @@ class UriFile(
         return UriMyPath(context, resultUri)
     }
 
-    override suspend fun cp(destination: MyPath): MyPath {
+    override suspend fun cpFrom(destination: MyPathInterface): MyPathInterface {
         // API 24+ DocumentsContract.copyDocument
         val resultUri = DocumentsContract.copyDocument(
             context.contentResolver, uri, Uri.parse(destination.rawPath)

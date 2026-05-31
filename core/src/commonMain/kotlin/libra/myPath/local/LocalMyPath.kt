@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import libra.myPath.MyPath
+import libra.myPath.MyPathInterface
 import libra.myPath.stripPrefix
 import okio.FileMetadata
 import okio.FileSystem
@@ -17,7 +17,7 @@ import okio.SYSTEM
 
 @Serializable
 @SerialName("LocalMyPath")
-sealed class LocalMyPath : MyPath {
+sealed class LocalMyPath : MyPathInterface {
     @Transient
     val path: Path = rawPath.stripPrefix().toPath()
 
@@ -29,14 +29,14 @@ sealed class LocalMyPath : MyPath {
 
     final override fun toString(): String = rawPath
 
-    final override suspend fun statOrNull(): MyPath? {
+    final override suspend fun statOrNull(): MyPathInterface? {
         metadata = withContext(Dispatchers.IO) { FileSystem.SYSTEM.metadataOrNull(path) }
         metadata ?: return null
         return asMyFile() ?: asMyDirectory()
     }
 
 
-    final override suspend fun mk(dir: Boolean): MyPath = apply {
+    final override suspend fun mk(dir: Boolean): MyPathInterface = apply {
         when (dir) {
             true -> withContext(Dispatchers.IO) {
                 FileSystem.SYSTEM.createDirectories(path, false)

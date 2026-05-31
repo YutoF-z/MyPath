@@ -11,13 +11,13 @@ android-compileSdk = "37"
 
 [libraries]
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.11.0" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
-kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version = "0.9.0" }
+#kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version = "0.9.0" }
 # https://mvnrepository.com/artifact/com.squareup.okio/okio
 okio = { module = "com.squareup.okio:okio", version = "3.17.0" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.7.1" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
 
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
@@ -36,9 +36,9 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 # https://kotlinlang.org/docs/dokka-get-started.html
 dokka = { id = "org.jetbrains.dokka", version = "2.2.0" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin.plugin.serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin
-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.0-Beta2" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.0-RC2" }
 
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version = "9.2.0" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version = "9.2.1" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
 

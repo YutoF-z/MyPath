@@ -4,7 +4,7 @@ import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyDirectory
-import libra.myPath.MyPath
+import libra.myPath.MyPathInterface
 import okio.FileMetadata
 import okio.FileSystem
 import okio.SYSTEM
@@ -26,7 +26,7 @@ class LocalDirectory(
     override suspend fun asMyFile(mustExist: Boolean): LocalFile? = null
 
 
-    override suspend fun cp(destination: MyDirectory): MyDirectory = apply {
+    override suspend fun copyFrom(destination: MyDirectory): MyDirectory = apply {
         if (destination is LocalDirectory) {
             FileSystem.SYSTEM.copy(path, destination.path)
         }
@@ -35,12 +35,12 @@ class LocalDirectory(
     override suspend fun rm() = FileSystem.SYSTEM.deleteRecursively(path)
 
 
-    override fun list(pattern: Regex?): Sequence<MyPath> = Sequence {
+    override fun list(pattern: Regex?): Sequence<MyPathInterface> = Sequence {
         FileSystem.SYSTEM.list(path).forEach {
             yield()
         } }
 
-    override suspend fun mv(destination: MyDirectory): MyDirectory = apply {
+    override suspend fun moveFrom(destination: MyDirectory): MyDirectory = apply {
         if (destination is LocalDirectory) {
             FileSystem.SYSTEM.atomicMove(path, destination.path)
         } else {

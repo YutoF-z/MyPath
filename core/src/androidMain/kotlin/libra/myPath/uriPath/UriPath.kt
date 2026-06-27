@@ -5,7 +5,7 @@ import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import libra.myPath.MyPathInterface
+import libra.myPath.MyPath
 
 @Serializable
 @SerialName("UriPath")
@@ -15,7 +15,7 @@ class UriPath(
     override suspend fun asMyDirectory(mustExist: Boolean): UriDirectory? = null
     override suspend fun asMyFile(mustExist: Boolean): UriFile? = this
 
-    override suspend fun mk(dir: Boolean): MyPathInterface {
+    override suspend fun mk(dir: Boolean): MyPath {
         val parentUri = getParentUri(uri)
         val parentDoc = DocumentFile.fromTreeUri(context, parentUri)
         val mimeType =
@@ -25,7 +25,7 @@ class UriPath(
         return UriMyPath(context, newFile.uri)
     }
 
-    override suspend fun mvFrom(destination: MyPathInterface): MyPathInterface {
+    override suspend fun mvFrom(destination: MyPath): MyPath {
         val destUri = Uri.parse(destination.rawPath)
         val parentUri = getParentUri(uri)
         val destParentUri = getParentUri(destUri)
@@ -38,7 +38,7 @@ class UriPath(
         return UriMyPath(context, resultUri)
     }
 
-    override suspend fun cpFrom(destination: MyPathInterface): MyPathInterface {
+    override suspend fun cpFrom(destination: MyPath): MyPath {
         // API 24+ DocumentsContract.copyDocument
         val resultUri = DocumentsContract.copyDocument(
             context.contentResolver, uri, Uri.parse(destination.rawPath)

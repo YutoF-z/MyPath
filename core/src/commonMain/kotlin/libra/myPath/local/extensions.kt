@@ -6,13 +6,13 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import libra.myPath.MyDirectory
 import libra.myPath.MyFile
-import libra.myPath.MyPathInterface
+import libra.myPath.MyPath
 
 @OptIn(ExperimentalSerializationApi::class)
 val LocalModule by lazy {
     SerializersModule {
-        polymorphic(MyPathInterface::class) {
-            subclassesOfSealed<LocalMyPath>()
+        polymorphic(MyPath::class) {
+            subclassesOfSealed<LocalPath>()
         }
         polymorphic(MyDirectory::class) {
             subclass(LocalDirectory::class)

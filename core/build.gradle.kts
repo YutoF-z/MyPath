@@ -27,14 +27,14 @@ kotlin {
             sourceSetTreeName = "test"
         }
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    linuxX64()
+//    iosX64()
+//    iosArm64()
+//    iosSimulatorArm64()
+//    linuxX64()
 
     sourceSets {
         commonMain.dependencies {
-            //put your multiplatform dependencies here
+            // put your multiplatform dependencies here
             kotlin("reflect")
             implementation(libs.bundles.impl.core)
         }

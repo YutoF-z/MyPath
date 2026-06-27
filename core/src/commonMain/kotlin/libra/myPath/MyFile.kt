@@ -1,7 +1,6 @@
 package libra.myPath
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.BinaryFormat
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -18,31 +17,41 @@ import okio.buffer
 import okio.use
 
 @Polymorphic
-interface MyFile : MyPathInterface {
+interface MyFile : MyPath {
     suspend fun source(): Source
     suspend fun sink(append: Boolean = false): Sink
+    suspend fun rm()
 
-
-    suspend fun copyFrom(destination: MyFile): MyFile = write(destination.source())
-
-    suspend fun moveFrom(destination: MyFile): MyFile = apply {
-        copyFrom(destination)
-        runCatching { statOrNull() }.getOrNull()?.run {
+    suspend fun mk(): MyFile? = write(byteArrayOf(), append = true)
+    suspend infix fun copyFrom(destination: MyFile): MyFile = write(destination.source())
+    suspend infix fun moveFrom(destination: MyFile): MyFile = apply {
+        runCatching {
+            withContext(Dispatchers.IO) {
+                copyFrom(destination)
+                statOrNull()
+            }
+        }.getOrNull()?.run {
             destination.rm()
         }
     }
-
-    suspend fun mk(): MyFile? = write(byteArrayOf(), append = true)
 }
 
 
-suspend fun MyFile.copyTo(destination: MyFile): MyFile = destination.copyFrom(this)
-suspend fun MyFile.moveTo(destination: MyFile): MyFile = destination.moveFrom(this)
+suspend fun MyFile.readByteArray(): ByteArray =
+    withContext(Dispatchers.IO) { source().buffer().use { it.readByteArray() } }
 
 suspend fun <T> MyFile.read(
     serializer: KSerializer<T>,
     format: BinaryFormat
 ): T = format.decodeFromByteArray(serializer, readByteArray())
+
+suspend inline infix fun <reified T> MyFile.read(
+    format: BinaryFormat
+): T = read(serializer(), format)
+
+
+suspend fun MyFile.readString(): String =
+    withContext(Dispatchers.IO) { source().buffer().use { it.readUtf8() } }
 
 @OptIn(ExperimentalSerializationApi::class)
 suspend fun <T> MyFile.read(
@@ -56,20 +65,28 @@ suspend fun <T> MyFile.read(
     else -> format.decodeFromString(serializer, readString())
 }
 
-suspend inline fun <reified T> MyFile.read(
-    format: BinaryFormat
-): T = read(serializer(), format)
-
-suspend inline fun <reified T> MyFile.read(
+suspend inline infix fun <reified T> MyFile.read(
     format: StringFormat
 ): T = read(serializer(), format)
 
-suspend fun MyFile.readByteArray(): ByteArray =
-    withContext(Dispatchers.IO) { source().buffer().use { it.readByteArray() } }
 
-suspend fun MyFile.readString(): String =
-    withContext(Dispatchers.IO) { source().buffer().use { it.readUtf8() } }
+suspend fun MyFile.write(
+    source: Source,
+    append: Boolean = false
+): MyFile = apply {
+    withContext(Dispatchers.IO) {
+        sink(append).buffer().use { it.writeAll(source) }
+    }
+}
 
+suspend fun MyFile.write(
+    value: ByteArray,
+    append: Boolean = false
+): MyFile = apply {
+    withContext(Dispatchers.IO) {
+        sink(append).buffer().use { it.write(value) }
+    }
+}
 
 suspend fun <T> MyFile.write(
     value: T,
@@ -80,6 +97,20 @@ suspend fun <T> MyFile.write(
     false
 )
 
+suspend inline fun <reified T> MyFile.write(
+    value: T,
+    format: BinaryFormat
+) = write(value, serializer(), format)
+
+
+suspend fun MyFile.write(
+    value: String,
+    append: Boolean = false
+): MyFile = apply {
+    withContext(Dispatchers.IO) {
+        sink(append).buffer().use { it.writeUtf8(value) }
+    }
+}
 
 @OptIn(ExperimentalSerializationApi::class)
 suspend fun <T> MyFile.write(
@@ -98,37 +129,5 @@ suspend fun <T> MyFile.write(
 
 suspend inline fun <reified T> MyFile.write(
     value: T,
-    format: BinaryFormat
-) = write(value, serializer(), format)
-
-suspend inline fun <reified T> MyFile.write(
-    value: T,
     format: StringFormat
 ) = write(value, serializer(), format)
-
-suspend fun MyFile.write(
-    value: ByteArray,
-    append: Boolean = false
-): MyFile = apply {
-    withContext(Dispatchers.IO) {
-        sink(append).buffer().use { it.write(value) }
-    }
-}
-
-suspend fun MyFile.write(
-    value: String,
-    append: Boolean = false
-): MyFile = apply {
-    withContext(Dispatchers.IO) {
-        sink(append).buffer().use { it.writeUtf8(value) }
-    }
-}
-
-suspend fun MyFile.write(
-    source: Source,
-    append: Boolean = false
-): MyFile = apply {
-    withContext(Dispatchers.IO) {
-        sink(append).buffer().use { it.writeAll(source) }
-    }
-}

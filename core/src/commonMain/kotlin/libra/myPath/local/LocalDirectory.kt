@@ -1,6 +1,8 @@
 package libra.myPath.local
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
@@ -10,6 +12,7 @@ import libra.myPath.MyFile
 import libra.myPath.MyPath
 import okio.FileMetadata
 import okio.FileSystem
+import javax.naming.Context
 
 @Serializable
 @SerialName("LocalDirectory")
@@ -23,14 +26,50 @@ class LocalDirectory(
         this@LocalDirectory.metadata = metadata
     }
 
-    override fun list(pattern: Regex?): Sequence<MyPath> = Sequence {
-        FileSystem.SYSTEM.list(path).forEach {
-            yield()
+    override fun list(
+        contains: String?,
+        filter: (MyPath.() -> Boolean)?
+    ): Flow<MyPath> = flow {
+        for (it in FileSystem.SYSTEM.listRecursively(path)) {
+            if (path !in listOf(it.parent, it)) break
+
+            contains?.let { it1 ->
+                if (it1 !in it.toString()) continue
+            }
+
+            val path = when(FileSystem.SYSTEM.metadata(it).isDirectory) {
+                true -> it.toString().toLocalDirectory()
+                false -> it.toString().toLocalFile()
+            }
+
+            filter?.let { it1 ->
+                if (!path.it1()) continue
+            }
+
+            emit(path)
         }
     }
 
-    override fun listRecursively(pattern: Regex?): Sequence<MyPath> {
-        FileSystem.SYSTEM.listRecursively(path)
+    override fun listRecursively(
+        contains: String?,
+        filter: (MyPath.() -> Boolean)?
+    ): Flow<MyPath> = flow {
+        for (it in FileSystem.SYSTEM.listRecursively(path)) {
+            contains?.let { it1 ->
+                if (it1 !in it.toString()) continue
+            }
+
+            val path = when(FileSystem.SYSTEM.metadata(it).isDirectory) {
+                true -> it.toString().toLocalDirectory()
+                false -> it.toString().toLocalFile()
+            }
+
+            filter?.let { it1 ->
+                if (!path.it1()) continue
+            }
+
+            emit(path)
+        }
     }
 
     override fun fileWith(name: String): MyFile = (path / name).toString().toLocalFile()

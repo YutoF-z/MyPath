@@ -38,13 +38,8 @@ class LocalFile(
         }
     }
 
-    override suspend fun rm() = withContext(Dispatchers.IO) { FileSystem.SYSTEM.delete(path) }
-
-    override suspend infix fun moveFrom(destination: MyFile): MyFile =
-        if (destination is LocalFile) moveFrom(destination)
-        else super moveFrom destination
-    suspend infix fun moveFrom(destination: LocalFile): LocalFile = apply {
-        withContext(Dispatchers.IO) { FileSystem.SYSTEM.atomicMove(destination.path, path) }
+    override suspend fun rm() = withContext(Dispatchers.IO) {
+        FileSystem.SYSTEM.delete(path)
     }
 
     override suspend infix fun copyFrom(destination: MyFile): MyFile =
@@ -52,6 +47,13 @@ class LocalFile(
         else super copyFrom destination
     suspend infix fun copyFrom(destination: LocalFile): MyFile = apply {
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.copy(destination.path, path) }
+    }
+
+    override suspend infix fun moveFrom(destination: MyFile): MyFile =
+        if (destination is LocalFile) moveFrom(destination)
+        else super moveFrom destination
+    suspend infix fun moveFrom(destination: LocalFile): LocalFile = apply {
+        withContext(Dispatchers.IO) { FileSystem.SYSTEM.atomicMove(destination.path, path) }
     }
 }
 

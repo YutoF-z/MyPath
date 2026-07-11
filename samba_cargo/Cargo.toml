@@ -3,4 +3,12 @@ name = "samba_cargo"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "samba_cargo"
+
 [dependencies]
+uniffi = { version = "0.32.0", features = [ "tokio" ] }
+
+[build-dependencies]
+uniffi = { version = "0.32.0", features = [ "build" ] }

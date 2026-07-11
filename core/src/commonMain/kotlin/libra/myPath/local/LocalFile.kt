@@ -1,18 +1,14 @@
 package libra.myPath.local
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyFile
 import okio.FileMetadata
 import okio.FileSystem
-import okio.SYSTEM
 import okio.Sink
 import okio.Source
-import kotlin.apply
-
 
 
 @Serializable
@@ -45,6 +41,7 @@ class LocalFile(
     override suspend infix fun copyFrom(destination: MyFile): MyFile =
         if (destination is LocalFile) copyFrom(destination)
         else super copyFrom destination
+
     suspend infix fun copyFrom(destination: LocalFile): MyFile = apply {
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.copy(destination.path, path) }
     }
@@ -52,6 +49,7 @@ class LocalFile(
     override suspend infix fun moveFrom(destination: MyFile): MyFile =
         if (destination is LocalFile) moveFrom(destination)
         else super moveFrom destination
+
     suspend infix fun moveFrom(destination: LocalFile): LocalFile = apply {
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.atomicMove(destination.path, path) }
     }

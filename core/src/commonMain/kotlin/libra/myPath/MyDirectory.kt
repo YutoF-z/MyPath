@@ -10,7 +10,10 @@ import kotlinx.serialization.Polymorphic
 @Polymorphic
 interface MyDirectory : MyPath {
     fun list(contains: String? = null, filter: (MyPath.() -> Boolean)? = null): Flow<MyPath>
-    fun listRecursively(contains: String? = null, filter: (MyPath.() -> Boolean)? = null): Flow<MyPath>
+    fun listRecursively(
+        contains: String? = null,
+        filter: (MyPath.() -> Boolean)? = null
+    ): Flow<MyPath>
 
     infix fun fileWith(name: String): MyFile
     infix fun dirWith(name: String): MyDirectory
@@ -22,6 +25,7 @@ interface MyDirectory : MyPath {
             copy(destination)
         }
     }
+
     suspend infix fun moveFrom(destination: MyDirectory): MyDirectory = apply {
         withContext(Dispatchers.IO) {
             runCatching {

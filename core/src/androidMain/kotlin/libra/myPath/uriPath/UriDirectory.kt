@@ -7,6 +7,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyDirectory
 import libra.myPath.MyPath
+import androidx.core.net.toUri
 
 
 @Serializable
@@ -35,7 +36,7 @@ class UriDirectory(
     }
 
     override suspend fun mvFrom(destination: MyPath): MyPath {
-        val destUri = Uri.parse(destination.rawPath)
+        val destUri = destination.rawPath.toUri()
         val parentUri = getParentUri(uri)
         val destParentUri = getParentUri(destUri)
 

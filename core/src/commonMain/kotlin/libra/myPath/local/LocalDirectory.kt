@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyDirectory
@@ -12,7 +11,6 @@ import libra.myPath.MyFile
 import libra.myPath.MyPath
 import okio.FileMetadata
 import okio.FileSystem
-import javax.naming.Context
 
 @Serializable
 @SerialName("LocalDirectory")
@@ -37,7 +35,7 @@ class LocalDirectory(
                 if (it1 !in it.toString()) continue
             }
 
-            val path = when(FileSystem.SYSTEM.metadata(it).isDirectory) {
+            val path = when (FileSystem.SYSTEM.metadata(it).isDirectory) {
                 true -> it.toString().toLocalDirectory()
                 false -> it.toString().toLocalFile()
             }
@@ -59,7 +57,7 @@ class LocalDirectory(
                 if (it1 !in it.toString()) continue
             }
 
-            val path = when(FileSystem.SYSTEM.metadata(it).isDirectory) {
+            val path = when (FileSystem.SYSTEM.metadata(it).isDirectory) {
                 true -> it.toString().toLocalDirectory()
                 false -> it.toString().toLocalFile()
             }

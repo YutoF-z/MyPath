@@ -1,76 +1,54 @@
 package libra.myPath.uriPath
 
-import android.annotation.SuppressLint
-import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
-import kotlinx.io.asSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyFile
-import libra.myPath.MyPath
 import okio.Sink
 import okio.Source
 import okio.sink
+import okio.source
+
 
 @Serializable
 @SerialName("UriFile")
 class UriFile(
     override val rawPath: String
-) : UriMyPath(), MyFile {
-    override suspend fun asMyDirectory(mustExist: Boolean): UriDirectory? = null
-    override suspend fun asMyFile(mustExist: Boolean): UriFile = this
+) : UriPath(), MyFile {
+    override suspend fun source(): Source =
+        context.contentResolver.openInputStream(path)!!.source()
 
-    override val documentFile: DocumentFile? by lazy {
-        DocumentFile.fromSingleUri(context, uri)
+    override suspend fun sink(append: Boolean): Sink =
+        context.contentResolver.openOutputStream(path, if (append) "wa" else "w")!!.sink()
+
+    override fun documentFile(): DocumentFile? = DocumentFile.fromSingleUri(context, path)
+
+
+    override suspend infix fun copyFrom(destination: MyFile) =
+        if (destination is UriFile) copyFrom(destination)
+        else super copyFrom destination
+
+    suspend infix fun copyFrom(destination: UriFile) = withContext(Dispatchers.IO) {
+        val resultUri = DocumentsContract.copyDocument(
+            context.contentResolver, path, destination.path
+        ) ?: throw Exception("Copy failed")
     }
 
-    override suspend fun source(): Source {
-        val inputStream = context.contentResolver.openInputStream(uri)
-            ?: throw Exception("Failed to open input stream")
-        return inputStream.asSource()
-    }
+    override suspend infix fun moveFrom(destination: MyFile) =
+        if (destination is UriFile) moveFrom(destination)
+        else super moveFrom destination
 
-    @SuppressLint("Recycle")
-    override suspend fun sink(): Sink {
-        val mode = if (append) "wa" else "w"
-        val outputStream = context.contentResolver.openOutputStream(uri, mode)
-            ?: throw Exception("Failed to open output stream")
-        return outputStream.sink()
-    }
-
-
-    override suspend fun mk(dir: Boolean): MyPath {
-        // parentUri と displayName を分離して DocumentsContract.createDocument を呼ぶ実装が必要
-        // 簡易的には DocumentFile.createFile / createDirectory を使用
-        val parentUri = getParentUri(uri) // 補助関数で親のURIを取得
-        val parentDoc = DocumentFile.fromTreeUri(context, parentUri)
-        val mimeType =
-            if (dir) DocumentsContract.Document.MIME_TYPE_DIR else "application/octet-stream"
-        val newFile = parentDoc?.createFile(mimeType, name ?: "new_item")
-            ?: throw Exception("Failed to create")
-        return UriMyPath(context, newFile.uri)
-    }
-
-    override suspend fun mvFrom(destination: MyPath): MyPath {
-        val destUri = Uri.parse(destination.rawPath)
-        val parentUri = getParentUri(uri)
+    suspend infix fun moveFrom(destination: UriFile) = withContext(Dispatchers.IO) {
+        val destUri = destination.path
+        val parentUri = getParentUri(path)
         val destParentUri = getParentUri(destUri)
 
         // API 24+ の移動処理
         val resultUri = DocumentsContract.moveDocument(
-            context.contentResolver, uri, parentUri, destParentUri
+            context.contentResolver, path, parentUri, destParentUri
         ) ?: throw Exception("Move failed")
-
-        return UriMyPath(context, resultUri)
-    }
-
-    override suspend fun cpFrom(destination: MyPath): MyPath {
-        // API 24+ DocumentsContract.copyDocument
-        val resultUri = DocumentsContract.copyDocument(
-            context.contentResolver, uri, Uri.parse(destination.rawPath)
-        ) ?: throw Exception("Copy failed")
-
-        return UriMyPath(context, resultUri)
     }
 }

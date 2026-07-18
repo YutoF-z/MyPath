@@ -20,15 +20,16 @@ import okio.use
 interface MyFile : MyPath {
     suspend fun source(): Source
     suspend fun sink(append: Boolean = false): Sink
-    suspend fun rm()
 
-    suspend fun mk(): MyFile? = write(byteArrayOf(), append = true)
-    suspend infix fun copyFrom(destination: MyFile): MyFile = write(destination.source())
-    suspend infix fun moveFrom(destination: MyFile): MyFile = apply {
+    suspend infix fun copyFrom(destination: MyFile) {
+        write(destination.source())
+    }
+
+    suspend infix fun moveFrom(destination: MyFile) {
         runCatching {
             withContext(Dispatchers.IO) {
                 copyFrom(destination)
-                statOrNull()
+                metadata()?.size
             }
         }.getOrNull()?.run {
             destination.rm()
@@ -37,8 +38,9 @@ interface MyFile : MyPath {
 }
 
 
-suspend fun MyFile.readByteArray(): ByteArray =
-    withContext(Dispatchers.IO) { source().buffer().use { it.readByteArray() } }
+suspend fun MyFile.readByteArray(): ByteArray = withContext(Dispatchers.IO) {
+    source().buffer().use { it.readByteArray() }
+}
 
 suspend fun <T> MyFile.read(
     serializer: KSerializer<T>,
@@ -50,19 +52,19 @@ suspend inline infix fun <reified T> MyFile.read(
 ): T = read(serializer(), format)
 
 
-suspend fun MyFile.readString(): String =
-    withContext(Dispatchers.IO) { source().buffer().use { it.readUtf8() } }
+suspend fun MyFile.readString(): String = withContext(Dispatchers.IO) {
+    source().buffer().use { it.readUtf8() }
+}
 
 @OptIn(ExperimentalSerializationApi::class)
 suspend fun <T> MyFile.read(
     serializer: KSerializer<T>,
     format: StringFormat
-): T = when (format) {
-    is Json -> withContext(Dispatchers.IO) {
-        source().buffer().use { format.decodeFromBufferedSource(serializer, it) }
+): T = withContext(Dispatchers.IO) {
+    if (format is Json) source().buffer().use {
+        format.decodeFromBufferedSource(serializer, it)
     }
-
-    else -> format.decodeFromString(serializer, readString())
+    else format.decodeFromString(serializer, readString())
 }
 
 suspend inline infix fun <reified T> MyFile.read(
@@ -73,7 +75,7 @@ suspend inline infix fun <reified T> MyFile.read(
 suspend fun MyFile.write(
     source: Source,
     append: Boolean = false
-): MyFile = apply {
+) {
     withContext(Dispatchers.IO) {
         sink(append).buffer().use { it.writeAll(source) }
     }
@@ -82,7 +84,7 @@ suspend fun MyFile.write(
 suspend fun MyFile.write(
     value: ByteArray,
     append: Boolean = false
-): MyFile = apply {
+) {
     withContext(Dispatchers.IO) {
         sink(append).buffer().use { it.write(value) }
     }
@@ -92,7 +94,7 @@ suspend fun <T> MyFile.write(
     value: T,
     serializer: KSerializer<T>,
     format: BinaryFormat
-): MyFile = write(
+) = write(
     format.encodeToByteArray(serializer, value),
     false
 )
@@ -106,7 +108,7 @@ suspend inline fun <reified T> MyFile.write(
 suspend fun MyFile.write(
     value: String,
     append: Boolean = false
-): MyFile = apply {
+) {
     withContext(Dispatchers.IO) {
         sink(append).buffer().use { it.writeUtf8(value) }
     }
@@ -117,7 +119,7 @@ suspend fun <T> MyFile.write(
     value: T,
     serializer: KSerializer<T>,
     format: StringFormat
-): MyFile = apply {
+) {
     when (format) {
         is Json -> withContext(Dispatchers.IO) {
             sink().buffer().use { format.encodeToBufferedSink(serializer, value, it) }

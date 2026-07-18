@@ -5,24 +5,19 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyFile
-import okio.FileMetadata
 import okio.FileSystem
 import okio.Sink
 import okio.Source
 
+
+expect fun localFileFromDialog(): LocalFile
+fun String.toLocalFile() = LocalFile(this)
 
 @Serializable
 @SerialName("LocalFile")
 class LocalFile(
     override val rawPath: String
 ) : MyFile, LocalPath() {
-    constructor(
-        rawPath: String,
-        metadata: FileMetadata? = null
-    ) : this(rawPath) {
-        this@LocalFile.metadata = metadata
-    }
-
     override suspend fun source(): Source = withContext(Dispatchers.IO) {
         FileSystem.SYSTEM.source(path)
     }
@@ -38,22 +33,19 @@ class LocalFile(
         FileSystem.SYSTEM.delete(path)
     }
 
-    override suspend infix fun copyFrom(destination: MyFile): MyFile =
+    override suspend infix fun copyFrom(destination: MyFile) =
         if (destination is LocalFile) copyFrom(destination)
         else super copyFrom destination
 
-    suspend infix fun copyFrom(destination: LocalFile): MyFile = apply {
+    suspend infix fun copyFrom(destination: LocalFile) {
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.copy(destination.path, path) }
     }
 
-    override suspend infix fun moveFrom(destination: MyFile): MyFile =
+    override suspend infix fun moveFrom(destination: MyFile) =
         if (destination is LocalFile) moveFrom(destination)
         else super moveFrom destination
 
-    suspend infix fun moveFrom(destination: LocalFile): LocalFile = apply {
+    suspend infix fun moveFrom(destination: LocalFile) {
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.atomicMove(destination.path, path) }
     }
 }
-
-expect fun localFileFromDialog(): LocalFile
-fun String.toLocalFile() = LocalFile(this)

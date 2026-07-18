@@ -7,23 +7,18 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import libra.myPath.MyDirectory
-import libra.myPath.MyFile
 import libra.myPath.MyPath
-import okio.FileMetadata
 import okio.FileSystem
+
+
+expect fun localDirectoryFromDialog(): LocalDirectory
+fun String.toLocalDirectory() = LocalDirectory(this)
 
 @Serializable
 @SerialName("LocalDirectory")
 class LocalDirectory(
     override val rawPath: String
 ) : LocalPath(), MyDirectory {
-    constructor(
-        rawPath: String,
-        metadata: FileMetadata? = null
-    ) : this(rawPath) {
-        this@LocalDirectory.metadata = metadata
-    }
-
     override fun list(
         contains: String?,
         filter: (MyPath.() -> Boolean)?
@@ -70,43 +65,37 @@ class LocalDirectory(
         }
     }
 
-    override fun fileWith(name: String): MyFile = (path / name).toString().toLocalFile()
+    override fun fileWith(name: String): LocalFile = (path / name).toString().toLocalFile()
 
-    override fun dirWith(name: String): MyDirectory = (path / name).toString().toLocalDirectory()
+    override fun dirWith(name: String): LocalDirectory = (path / name).toString().toLocalDirectory()
+
+    override suspend fun mkDir(name: String): LocalDirectory = withContext(Dispatchers.IO) {
+        dirWith(name).also { FileSystem.SYSTEM.createDirectories(it.path, false) }
+    }
 
 
     override suspend fun rm() = withContext(Dispatchers.IO) {
         FileSystem.SYSTEM.deleteRecursively(path)
     }
 
-    override suspend fun mk(): MyDirectory = apply {
-        withContext(Dispatchers.IO) {
-            FileSystem.SYSTEM.createDirectories(path, false)
-        }
-    }
-
-
-    override suspend infix fun moveFrom(destination: MyDirectory): MyDirectory =
+    override suspend infix fun moveFrom(destination: MyDirectory) =
         if (destination is LocalDirectory) moveFrom(destination)
         else super moveFrom destination
 
-    suspend infix fun moveFrom(destination: LocalDirectory): LocalDirectory = apply {
+    suspend infix fun moveFrom(destination: LocalDirectory) {
         withContext(Dispatchers.IO) {
             FileSystem.SYSTEM.atomicMove(destination.path, path)
         }
     }
 
-    override suspend infix fun copyFrom(destination: MyDirectory): MyDirectory =
+    override suspend infix fun copyFrom(destination: MyDirectory) =
         if (destination is LocalDirectory) copyFrom(destination)
         else super copyFrom destination
 
-    suspend fun copyFrom(destination: LocalDirectory): LocalDirectory = apply {
+    suspend fun copyFrom(destination: LocalDirectory) {
         withContext(Dispatchers.IO) {
             FileSystem.SYSTEM.copy(destination.path, path)
         }
     }
 
 }
-
-expect fun localDirectoryFromDialog(): LocalDirectory
-fun String.toLocalDirectory() = LocalDirectory(this)

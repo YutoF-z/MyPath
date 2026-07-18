@@ -1,49 +1,81 @@
 package libra.myPath.uriPath
 
+import android.content.Context
+import android.database.Cursor
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.provider.OpenableColumns
+import androidx.core.database.getIntOrNull
+import androidx.core.database.getLongOrNull
+import androidx.core.database.getStringOrNull
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import libra.myPath.MyPath
+import okio.FileMetadata
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
 
 @Serializable
 @SerialName("UriPath")
-class UriPath(
-    override val rawPath: String
-) : UriMyPath() {
-    override suspend fun asMyDirectory(mustExist: Boolean): UriDirectory? = null
-    override suspend fun asMyFile(mustExist: Boolean): UriFile? = this
+sealed class UriPath : MyPath {
+    val path: Uri get() = rawPath.toUri()
+    abstract fun documentFile(): DocumentFile?
 
-    override suspend fun mk(dir: Boolean): MyPath {
-        val parentUri = getParentUri(uri)
-        val parentDoc = DocumentFile.fromTreeUri(context, parentUri)
-        val mimeType =
-            if (dir) DocumentsContract.Document.MIME_TYPE_DIR else "application/octet-stream"
-        val newFile = parentDoc?.createFile(mimeType, name ?: "new_item")
-            ?: throw Exception("Failed to create")
-        return UriMyPath(context, newFile.uri)
+    final override suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
+        documentFile()?.exists() ?: false
     }
 
-    override suspend fun mvFrom(destination: MyPath): MyPath {
-        val destUri = Uri.parse(destination.rawPath)
-        val parentUri = getParentUri(uri)
-        val destParentUri = getParentUri(destUri)
+    final override suspend fun name(): String? =
+        withContext(Dispatchers.IO) { documentFile()?.name }
 
-        // API 24+ の移動処理
-        val resultUri = DocumentsContract.moveDocument(
-            context.contentResolver, uri, parentUri, destParentUri
-        ) ?: throw Exception("Move failed")
+    final override suspend fun metadata(): FileMetadata? = useCursor { metadataOrNull() }
 
-        return UriMyPath(context, resultUri)
+    final override suspend fun rm() {
+        withContext(Dispatchers.IO) {
+            documentFile()?.delete()
+        }
     }
 
-    override suspend fun cpFrom(destination: MyPath): MyPath {
-        // API 24+ DocumentsContract.copyDocument
-        val resultUri = DocumentsContract.copyDocument(
-            context.contentResolver, uri, Uri.parse(destination.rawPath)
-        ) ?: throw Exception("Copy failed")
+    companion object : KoinComponent {
+        @JvmStatic
+        val context: Context by inject()
 
-        return UriMyPath(context, resultUri)
+        fun Cursor.name(): String? =
+            getStringOrNull(getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME))
+
+        fun Cursor.flags(): UriFlags? = getIntOrNull(
+            getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_FLAGS)
+        )?.let { UriFlags(it) }
+
+        fun Cursor.metadataOrNull(): FileMetadata? {
+            val isDirectory = getStringOrNull(
+                getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+            )
+                ?.let { it == DocumentsContract.Document.MIME_TYPE_DIR }
+                ?: return null
+
+            return FileMetadata(
+                isRegularFile = !isDirectory,
+                isDirectory = isDirectory,
+                size = getLongOrNull(getColumnIndexOrThrow(OpenableColumns.SIZE)),
+                lastModifiedAtMillis = getLongOrNull(getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED))
+            )
+        }
     }
 }
+
+suspend inline fun <R> UriPath.useCursor(crossinline block: Cursor.() -> R): R? =
+    withContext(Dispatchers.IO) {
+        UriPath.context.contentResolver.query(
+            path, null, null, null, null
+        )?.use {
+            if (it.moveToFirst()) it.block()
+            else null
+        }
+    }

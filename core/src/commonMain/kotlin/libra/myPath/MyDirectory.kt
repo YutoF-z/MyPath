@@ -18,36 +18,38 @@ interface MyDirectory : MyPath {
     infix fun fileWith(name: String): MyFile
     infix fun dirWith(name: String): MyDirectory
 
-    suspend fun mk(): MyDirectory?
-    suspend fun rm()
-    suspend infix fun copyFrom(destination: MyDirectory): MyDirectory = apply {
+
+    suspend fun mkFile(name: String): MyFile? =
+        fileWith(name).apply { write(byteArrayOf(), append = true) }
+
+    suspend fun mkDir(name: String): MyDirectory?
+
+    suspend infix fun copyFrom(destination: MyDirectory) {
         withContext(Dispatchers.IO) {
-            copy(destination)
+            copy(destination, this@MyDirectory)
         }
     }
 
-    suspend infix fun moveFrom(destination: MyDirectory): MyDirectory = apply {
+    suspend infix fun moveFrom(destination: MyDirectory) {
         withContext(Dispatchers.IO) {
             runCatching {
                 copyFrom(destination)
-                statOrNull()
+                exists()
             }.getOrNull()?.run { destination.rm() }
         }
     }
 
-    private suspend fun copy(destination: MyDirectory, base: MyDirectory = this) {
-        destination.list()
-            .buffer(capacity = 64)
-            .collect {
-                it.onEach(
-                    { base.fileWith(name.toString()).copyFrom(this) },
-                    {
-                        base.dirWith(it.name.toString()).let { dir ->
-                            dir.mk()
-                            copy(this, dir)
-                        }
-                    }
-                )
-            }
-    }
+}
+
+private suspend fun copy(destination: MyDirectory, base: MyDirectory) {
+    destination.list()
+        .buffer(capacity = 64)
+        .collect {
+            it.onEach(
+                { base.fileWith(name().toString()).copyFrom(this) },
+                {
+                    copy(this, base.mkDir(it.name().toString())!!)
+                }
+            )
+        }
 }

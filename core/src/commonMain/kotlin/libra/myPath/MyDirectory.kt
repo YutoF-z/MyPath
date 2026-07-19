@@ -3,6 +3,8 @@ package libra.myPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Polymorphic
 
@@ -13,14 +15,30 @@ interface MyDirectory : MyPath {
     fun listRecursively(
         contains: String? = null,
         filter: (MyPath.() -> Boolean)? = null
-    ): Flow<MyPath>
+    ): Flow<MyPath> = flow {
+        filter?.let {
+            list() { this is MyDirectory || it() }
+        } ?: list()
+            .buffer(capacity = 64)
+            .collect {
+                it.onEach(
+                    {
+                        if (contains == null || it.name()?.contains(contains) ?: true)
+                            emit(it)
+                    },
+                    {
+                        emitAll(listRecursively(contains, filter))
+                    }
+                )
+            }
+    }
 
-    infix fun fileWith(name: String): MyFile
-    infix fun dirWith(name: String): MyDirectory
+    suspend infix fun fileWith(name: String): MyFile?
+    suspend infix fun dirWith(name: String): MyDirectory?
 
 
     suspend fun mkFile(name: String): MyFile? =
-        fileWith(name).apply { write(byteArrayOf(), append = true) }
+        fileWith(name)?.apply { write(byteArrayOf(), append = true) }
 
     suspend fun mkDir(name: String): MyDirectory?
 
@@ -46,7 +64,7 @@ private suspend fun copy(destination: MyDirectory, base: MyDirectory) {
         .buffer(capacity = 64)
         .collect {
             it.onEach(
-                { base.fileWith(name().toString()).copyFrom(this) },
+                { base.fileWith(name().toString())?.copyFrom(this) },
                 {
                     copy(this, base.mkDir(it.name().toString())!!)
                 }

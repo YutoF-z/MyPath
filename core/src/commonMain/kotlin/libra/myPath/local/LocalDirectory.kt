@@ -22,9 +22,9 @@ class LocalDirectory(
     override fun list(
         contains: String?,
         filter: (MyPath.() -> Boolean)?
-    ): Flow<MyPath> = flow {
-        for (it in FileSystem.SYSTEM.listRecursively(path)) {
-            if (path !in listOf(it.parent, it)) break
+    ): Flow<LocalPath> = flow {
+        for (it in FileSystem.SYSTEM.list(path)) {
+            if (path == it) continue
 
             contains?.let { it1 ->
                 if (it1 !in it.toString()) continue
@@ -46,7 +46,7 @@ class LocalDirectory(
     override fun listRecursively(
         contains: String?,
         filter: (MyPath.() -> Boolean)?
-    ): Flow<MyPath> = flow {
+    ): Flow<LocalPath> = flow {
         for (it in FileSystem.SYSTEM.listRecursively(path)) {
             contains?.let { it1 ->
                 if (it1 !in it.toString()) continue
@@ -65,9 +65,10 @@ class LocalDirectory(
         }
     }
 
-    override fun fileWith(name: String): LocalFile = (path / name).toString().toLocalFile()
+    override suspend fun fileWith(name: String): LocalFile = (path / name).toString().toLocalFile()
 
-    override fun dirWith(name: String): LocalDirectory = (path / name).toString().toLocalDirectory()
+    override suspend fun dirWith(name: String): LocalDirectory =
+        (path / name).toString().toLocalDirectory()
 
     override suspend fun mkDir(name: String): LocalDirectory = withContext(Dispatchers.IO) {
         dirWith(name).also { FileSystem.SYSTEM.createDirectories(it.path, false) }

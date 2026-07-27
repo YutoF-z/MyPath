@@ -16,6 +16,8 @@ import okio.Source
 import okio.buffer
 import okio.use
 
+
+
 @Polymorphic
 interface MyFile : MyPath {
     suspend fun source(): Source
@@ -36,7 +38,6 @@ interface MyFile : MyPath {
         }
     }
 }
-
 
 suspend fun MyFile.readByteArray(): ByteArray = withContext(Dispatchers.IO) {
     source().buffer().use { it.readByteArray() }

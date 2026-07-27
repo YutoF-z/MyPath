@@ -12,6 +12,8 @@ plugins {
 group = "libra.myPath.samba"
 version = libs.versions.project.get()
 
+
+
 kotlin {
     jvmToolchain(libs.versions.jvm.get().toInt())
 
@@ -28,16 +30,16 @@ kotlin {
             sourceSetTreeName = "test"
         }
     }
-//    iosX64()
-//    iosArm64()
-//    iosSimulatorArm64()
-//    linuxX64()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    linuxX64()
 
     sourceSets {
         commonMain.dependencies {
             // put your multiplatform dependencies here
             kotlin("reflect")
-            include(":core")
+            implementation(project(":core"))
         }
 
         commonTest.dependencies {
@@ -47,8 +49,6 @@ kotlin {
 }
 
 uniffi {
-    projectName.set("samba_cargo")
-    cargoConfig {
-        cargoTomlPath.set(file("../samba_cargo/Cargo.toml").absolutePath)
-    }
+//    generateFromLibrary()
+    generateFromUdl()
 }

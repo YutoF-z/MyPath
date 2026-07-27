@@ -10,14 +10,14 @@ import okio.Sink
 import okio.Source
 
 
-expect fun localFileFromDialog(): LocalFile
 fun String.toLocalFile() = LocalFile(this)
 
+@JvmInline
 @Serializable
 @SerialName("LocalFile")
-class LocalFile(
+value class LocalFile(
     override val rawPath: String
-) : MyFile, LocalPath() {
+) : MyFile, LocalPath {
     override suspend fun source(): Source = withContext(Dispatchers.IO) {
         FileSystem.SYSTEM.source(path)
     }

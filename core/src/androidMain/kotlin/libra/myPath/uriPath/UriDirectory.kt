@@ -13,12 +13,13 @@ import libra.myPath.MyPath
 
 fun String.toUriDirectory() = UriDirectory(this)
 
+@JvmInline
 @Serializable
 @SerialName("UriFile")
-class UriDirectory(
+value class UriDirectory(
     override val rawPath: String
-) : UriPath(), MyDirectory {
-    override fun documentFile(): DocumentFile? = DocumentFile.fromTreeUri(context, path)
+) : UriPath, MyDirectory {
+    override fun documentFile(): DocumentFile? = DocumentFile.fromTreeUri(UriPath.context, path)
 
     override fun list(
         contains: String?,

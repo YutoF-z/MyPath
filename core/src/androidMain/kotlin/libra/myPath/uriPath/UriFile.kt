@@ -12,16 +12,17 @@ import okio.source
 
 fun String.toUriFile() = UriFile(this)
 
+@JvmInline
 @Serializable
 @SerialName("UriFile")
-class UriFile(
+value class UriFile(
     override val rawPath: String
-) : UriPath(), MyFile {
+) : UriPath, MyFile {
     override suspend fun source(): Source =
-        context.contentResolver.openInputStream(path)!!.source()
+        UriPath.context.contentResolver.openInputStream(path)!!.source()
 
     override suspend fun sink(append: Boolean): Sink =
-        context.contentResolver.openOutputStream(path, if (append) "wa" else "w")!!.sink()
+        UriPath.context.contentResolver.openOutputStream(path, if (append) "wa" else "w")!!.sink()
 
-    override fun documentFile(): DocumentFile? = DocumentFile.fromSingleUri(context, path)
+    override fun documentFile(): DocumentFile? = DocumentFile.fromSingleUri(UriPath.context, path)
 }

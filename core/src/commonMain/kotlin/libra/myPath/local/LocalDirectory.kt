@@ -11,14 +11,14 @@ import libra.myPath.MyPath
 import okio.FileSystem
 
 
-expect fun localDirectoryFromDialog(): LocalDirectory
 fun String.toLocalDirectory() = LocalDirectory(this)
 
+@JvmInline
 @Serializable
 @SerialName("LocalDirectory")
-class LocalDirectory(
+value class LocalDirectory(
     override val rawPath: String
-) : LocalPath(), MyDirectory {
+) : MyDirectory, LocalPath  {
     override fun list(
         contains: String?,
         filter: (MyPath.() -> Boolean)?

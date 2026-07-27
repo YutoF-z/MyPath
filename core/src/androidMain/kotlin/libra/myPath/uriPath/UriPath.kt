@@ -22,20 +22,20 @@ import org.koin.core.component.inject
 
 @Serializable
 @SerialName("UriPath")
-sealed class UriPath : MyPath {
+sealed interface UriPath : MyPath {
     val path: Uri get() = rawPath.toUri()
     abstract fun documentFile(): DocumentFile?
 
-    final override suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
         documentFile()?.exists() ?: false
     }
 
-    final override suspend fun name(): String? =
+    override suspend fun name(): String? =
         withContext(Dispatchers.IO) { documentFile()?.name }
 
-    final override suspend fun metadata(): FileMetadata? = useCursor { metadataOrNull() }
+    override suspend fun metadata(): FileMetadata? = useCursor { metadataOrNull() }
 
-    final override suspend fun rm() {
+    override suspend fun rm() {
         withContext(Dispatchers.IO) {
             documentFile()?.delete()
         }

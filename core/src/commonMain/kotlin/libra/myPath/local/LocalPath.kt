@@ -20,21 +20,21 @@ import okio.Path.Companion.toPath
 
 @Serializable
 @SerialName("LocalPath")
-sealed class LocalPath : MyPath {
+sealed interface LocalPath : MyPath {
     val path: Path get() = rawPath.stripPrefix().toPath()
 
-    final override suspend fun name(): String = path.name
+    override suspend fun name(): String = path.name
 
-    final override suspend fun metadata(): FileMetadata? =
+    override suspend fun metadata(): FileMetadata? =
         withContext(Dispatchers.IO) { FileSystem.SYSTEM.metadataOrNull(path) }
 
-    final override suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun exists(): Boolean = withContext(Dispatchers.IO) {
         FileSystem.SYSTEM.exists(path)
     }
 
     companion object {
         @OptIn(ExperimentalSerializationApi::class)
-        val LocalModule by lazy {
+        val serializersModule by lazy {
             SerializersModule {
                 polymorphic(MyPath::class) {
                     subclassesOfSealed<LocalPath>()

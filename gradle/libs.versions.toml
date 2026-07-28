@@ -32,6 +32,9 @@ koin-android = { module = "io.insert-koin:koin-android", version = "4.2.2" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
+# https://mvnrepository.com/artifact/net.java.dev.jna/jna
+jna = { module = "net.java.dev.jna:jna", version = "5.19.1" }
+
 [plugins]
 # https://kotlinlang.org/docs/dokka-get-started.html
 dokka = { id = "org.jetbrains.dokka", version = "2.2.0" }
@@ -58,4 +61,8 @@ impl-core = [
 impl-android = [
     "documentfile",
     "koin-android"
+]
+
+impl-samba = [
+    "jna"
 ]

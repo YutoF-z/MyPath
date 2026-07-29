@@ -1,0 +1,2 @@
+headers = samba_cargo.h
+package = uniffi.samba_cargo

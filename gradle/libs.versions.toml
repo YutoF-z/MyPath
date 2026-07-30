@@ -50,7 +50,7 @@ vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.37
 [bundles]
 impl-core = [
     "okio",
-#    "kotlinx-io-core",
+    #    "kotlinx-io-core",
     "kotlinx-datetime",
     "kotlinx-coroutines-core",
     "kotlinx-serialization-core",
@@ -64,5 +64,7 @@ impl-android = [
 ]
 
 impl-samba = [
-    "jna"
+    "jna",
+    "okio",
+    "kotlinx-coroutines-core"
 ]

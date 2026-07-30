@@ -81,16 +81,16 @@ val cargoBuild = tasks.register<Exec>("cargoBuild") {
         *head,
         listOf(
             "cargo build --release",
-            "cargo ndk -t x86_64 -t arm64-v8a -o src/androidMain/jniLibs build --release",
 //             cargo build --release --target aarch64-apple-ios,
 //             cargo build --release --target aarch64-apple-ios-sim,
-            "cargo run --release --bin uniffi-bindgen generate --library $outDir/$library.$ext --language kotlin --out-dir $outDir --no-format",
+            "cargo ndk -t x86_64 -t arm64-v8a -o src/androidMain/jniLibs build --release",
 //            "cbindgen --crate $library --output $outDir/$library.h"
+            "cargo run --bin uniffi-bindgen generate --library $outDir/$library.$ext --language kotlin --out-dir $outDir --no-format"
         ).joinToString(" && ")
     )
 }
 
-val uniFFIBindInstall = tasks.register<Copy>("uniFFIBindInstall") {
+tasks.register<Copy>("uniFFIBindInstall") {
     dependsOn(cargoBuild)
 
     description = "uniFFIBindInstall"
@@ -123,5 +123,8 @@ val uniFFIBindInstall = tasks.register<Copy>("uniFFIBindInstall") {
 
 //    from("target/release/samba_cargo.h") {
 //        into("src/nativeInterop/cinterop")
+//        samba_cargo.def
+//        headers = samba_cargo.h
+//        package = uniffi.samba_cargo
 //    }
 }

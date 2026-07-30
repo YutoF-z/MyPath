@@ -6,7 +6,8 @@ edition = "2024"
 [[bin]]
 # This can be whatever name makes sense for your project, but the rest of this tutorial assumes uniffi-bindgen.
 name = "uniffi-bindgen"
-path = "uniffi_bindgen.rs"
+path = "uniffi-bindgen.rs"
+
 
 [lib]
 name = "samba_cargo"

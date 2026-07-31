@@ -16,6 +16,5 @@ path = "src/commonMain/rust/lib.rs"
 
 [dependencies]
 uniffi = { version = "0.32.0", features = ["cli"] }
-
-[build-dependencies]
-uniffi = { version = "0.32.0", features = ["build"] }
+smb2 = "0.13.1"
+tokio = "1.53.1"

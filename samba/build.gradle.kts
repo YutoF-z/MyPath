@@ -98,17 +98,17 @@ tasks.register<Copy>("uniFFIBindInstall") {
 
     from("target/aarch64-linux-android/release") {
         include("*.so")
-        into("src/jvmMain/resources/jna/linux-aarch64")
+        into("src/jvmMain/resources/linux-aarch64")
     }
 
     from("target/x86_64-linux-android/release") {
         include("*.so")
-        into("src/jvmMain/resources/jna/linux-x86-64")
+        into("src/jvmMain/resources/linux-x86-64")
     }
 
     from("target/release") {
         include("*.dll")
-        into("src/jvmMain/resources/jna/win32-x86-64")
+        into("src/jvmMain/resources/win32-x86-64")
     }
 
     from("target/release/uniffi") {

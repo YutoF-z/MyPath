@@ -16,5 +16,6 @@ actual class SambaFile actual constructor(rawPath: String) : MyFile,
 
     override suspend fun rm() {
         TODO("Not yet implemented")
+        uniffi.samba_cargo.UniSmbClient
     }
 }

@@ -8,7 +8,8 @@ sealed interface Entry {
     val fileSystem: FileSystem
 
 
-    suspend fun name() = fileSystem.name(path)
-    suspend fun exists() = fileSystem.exists(path)
-    suspend fun metadata() = fileSystem.metadata(path)
+    suspend fun name() = fileSystem name path
+    suspend fun exists() = fileSystem exists path
+    suspend fun metadata() = fileSystem metadata path
+    suspend fun isTreePath() = fileSystem isTreePath path
 }

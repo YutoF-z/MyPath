@@ -3,12 +3,15 @@ package libra.myPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.io.Sink
 import kotlinx.io.Source
@@ -49,40 +52,62 @@ interface FileSystem {
 
 
     fun list(path: Path): Flow<Path>
-    fun listRecursively(path: Path): Flow<Path> = flow {
-        filter?.let {
-            list(path) { this is DirectoryEntry || it() }
-        } ?: list(path)
-            .buffer(capacity = 64)
-            .collect {
-                it.onEach(
-                    {
-                        if (contains == null || it.name()?.contains(contains) ?: true)
-                            emit(it)
-                    },
-                    {
-                        emitAll(listRecursively(contains, filter))
-                    }
-                )
+
+    data class ListRecursivelyReturn(
+        val cwd: Path,
+        val dirs: List<Path>,
+        val files: List<Path>,
+        val steps: List<String>
+    )
+
+    fun listRecursively(
+        path: Path,
+        maxDepth: Int = 100
+    ): Flow<ListRecursivelyReturn> = flow {
+        val queue = ArrayDeque<Pair<Path, List<String>>>()
+        queue.add(Pair(path, emptyList()))
+
+        while (queue.isNotEmpty()) {
+            currentCoroutineContext().ensureActive()
+
+            val (currentPath, currentSteps) = queue.removeFirst()
+            val dirs = mutableListOf<Path>()
+            val files = mutableListOf<Path>()
+
+            list(currentPath).collect { item ->
+                if (isTreePath(item)) {
+                    dirs.add(item)
+                } else {
+                    files.add(item)
+                }
             }
-    }
+
+            emit(
+                ListRecursivelyReturn(
+                    cwd = currentPath,
+                    dirs = dirs,
+                    files = files,
+                    steps = currentSteps
+                )
+            )
+
+            if (currentSteps.size < maxDepth) {
+                dirs.forEach { dir ->
+                    val nextSteps = currentSteps + name(dir).toString()
+                    queue.add(Pair(dir, nextSteps))
+                }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun deleteRecursively(path: Path) = withContext(Dispatchers.IO) {
-        if (!exists(path)) return@withContext
-
-        if (isTreePath(path)) {
-            list(path)
-                .flatMapMerge(concurrency = 16) { child ->
-                    flow {
-                        deleteRecursively(child)
-                        emit(Unit)
-                    }
-                }
-                .collect()
+        listRecursively(path).collect { (cwd, dirs, files, _) ->
+            for (file in files) delete(file)
+            for (dir in dirs) deleteRecursively(dir)
+            delete(cwd)
         }
-
-        delete(path)
     }
 
     suspend fun copyFrom(path: Path, from: DirectoryEntry) {

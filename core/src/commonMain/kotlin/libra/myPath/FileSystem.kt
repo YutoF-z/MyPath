@@ -102,13 +102,28 @@ interface FileSystem {
 
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend fun deleteRecursively(path: Path) = withContext(Dispatchers.IO) {
-        listRecursively(path).collect { (cwd, dirs, files, _) ->
-            for (file in files) delete(file)
-            for (dir in dirs) deleteRecursively(dir)
-            delete(cwd)
+suspend fun deleteRecursively(path: Path) = withContext(Dispatchers.IO) {
+    val dirDepths = mutableSetOf<Pair<Path, Int>>()
+
+    listRecursively(path).collect { (cwd, _, files, steps) ->
+        // 1. ファイルはその場で即座に削除（安全）
+        for (file in files) {
+            delete(file)
         }
+
+        // 2. 訪れたディレクトリ（cwd）とその深さを記憶するだけにする
+        // （dirs をここに追加する必要はありません。dirs は後で必ず cwd として流れてくるため）
+        dirDepths.add(Pair(cwd, steps.size))
     }
+
+    // 3. 収集したディレクトリを「最深部（steps.size が大きい順）」から順番に削除
+    dirDepths
+        .sortedByDescending { it.second }
+        .forEach { (dir, _) ->
+            delete(dir)
+        }
+}
+
 
     suspend fun copyFrom(path: Path, from: DirectoryEntry) {
         withContext(Dispatchers.IO) {

@@ -15,7 +15,11 @@ import kotlinx.serialization.StringFormat
 import kotlinx.serialization.serializer
 
 @Serializable
-data class FileEntry(override val path: Path, override val fileSystem: FileSystem) : Entry {
+data class FileEntry(
+    override val path: Path,
+    override val fileSystem: FileSystem,
+    override val parent: Path? = null
+) : Entry {
     suspend fun delete() = fileSystem delete path
     suspend fun source() = fileSystem source path
     suspend infix fun sink(append: Boolean = false) = fileSystem.sink(path, append)

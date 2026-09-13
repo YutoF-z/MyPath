@@ -1,168 +1,207 @@
 uniffi::setup_scaffolding!();
 
-use smb2::{SmbClient, Tree};
-use std::option::Option;
+use smb2::{ClientConfig, FileReader, FileWriter, SmbClient, Tree};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 
-#[derive(uniffi::Object)]
-pub struct UniSmbClient {
-    client: Mutex<SmbClient>,
-}
-
-#[derive(uniffi::Object)]
-pub struct UniSmbTree {
-    tree: Mutex<Tree>,
+#[derive(uniffi::Record)]
+pub struct SambaServerConfig {
+    pub host: Vec<String>,
+    pub port: Option<u16>,
+    pub share_name: String,
+    pub username: String,
+    pub password: String,
+    pub domain: Option<String>,
 }
 
 #[derive(uniffi::Record)]
-pub struct FileInfo {
-    pub name: String,
-    pub size: u64,
+pub struct SmbMetadata {
     pub is_directory: bool,
-    pub created: u64,
-    pub modified: u64,
-    pub accessed: Option<u64>,
+    pub is_file: bool,
+    pub size: u64,
 }
 
-#[uniffi::export]
-pub async fn connect(addr: &str, username: &str, password: &str) -> Option<Arc<UniSmbClient>> {
-    if let Ok(client) = smb2::connect(addr, username, password).await {
-        Some(Arc::new(UniSmbClient {
-            client: Mutex::new(client),
-        }))
-    } else {
-        None
-    }
+#[derive(uniffi::Record)]
+pub struct SmbDirEntry {
+    pub name: String,
+    pub is_directory: bool,
+    pub size: u64,
 }
 
-#[uniffi::export]
-impl UniSmbClient {
-    pub async fn reconnect(&self) -> bool {
-        self.client.lock().await.reconnect().await.is_ok()
-    }
+#[derive(uniffi::Object)]
+pub struct SmbFileSystem {
+    client: Mutex<SmbClient>,
+    tree: Mutex<Tree>,
+}
 
-    pub async fn connect_share(&self, share_name: &str) -> Option<Arc<UniSmbTree>> {
-        if let Ok(tree) = self.client.lock().await.connect_share(share_name).await {
-            Some(Arc::new(UniSmbTree {
-                tree: Mutex::new(tree),
-            }))
-        } else {
-            None
-        }
-    }
+#[derive(uniffi::Object)]
+pub struct SmbFileReader {
+    reader: Mutex<Option<FileReader>>,
+}
 
-    pub async fn list_directory(&self, tree: &UniSmbTree, path: &str) -> Option<Vec<FileInfo>> {
-        if let Ok(list) = self
-            .client
-            .lock()
-            .await
-            .list_directory(&mut *tree.tree.lock().await, path)
-            .await
-        {
-            Some(
-                list.into_iter()
-                    .map(|it| FileInfo {
-                        name: it.name,
-                        size: it.size,
-                        is_directory: it.is_directory,
-                        created: it.created.0,
-                        modified: it.modified.0,
-                        accessed: None,
-                    })
-                    .collect(),
-            )
-        } else {
-            None
-        }
-    }
+#[derive(uniffi::Object)]
+pub struct SmbFileWriter {
+    writer: Mutex<Option<FileWriter>>,
+}
 
-    pub async fn read_file(&self, tree: &UniSmbTree, path: &str) -> Option<Vec<u8>> {
-        self.client
-            .lock()
-            .await
-            .read_file(&mut *tree.tree.lock().await, path)
-            .await
-            .ok()
-    }
-
-    pub async fn read_file_pipelined(&self, tree: &UniSmbTree, path: &str) -> Option<Vec<u8>> {
-        self.client
-            .lock()
-            .await
-            .read_file_pipelined(&mut *tree.tree.lock().await, path)
-            .await
-            .ok()
-    }
-
-    pub async fn write_file(&self, tree: &UniSmbTree, path: &str, data: Vec<u8>) {
-        self.client
-            .lock()
-            .await
-            .write_file(&mut *tree.tree.lock().await, path, &*data)
-            .await
-            .ok();
-    }
-
-    pub async fn write_file_pipelined(&self, tree: &UniSmbTree, path: &str, data: Vec<u8>) {
-        self.client
-            .lock()
-            .await
-            .write_file_pipelined(&mut *tree.tree.lock().await, path, &*data)
-            .await
-            .ok();
-    }
-
-    pub async fn delete_file(&self, tree: &UniSmbTree, path: &str) {
-        self.client
-            .lock()
-            .await
-            .delete_file(&mut *tree.tree.lock().await, path)
-            .await
-            .ok();
-    }
-
-    pub async fn stat(&self, tree: &UniSmbTree, path: &str) -> Option<FileInfo> {
-        if let Ok(stat) = self
-            .client
-            .lock()
-            .await
-            .stat(&mut *tree.tree.lock().await, path)
-            .await
-        {
-            Some(FileInfo {
-                name: path
-                    .trim_end_matches(['/', '\\'])
-                    .split(['/', '\\'])
-                    .last()
-                    .unwrap_or("")
-                    .to_string(),
-                size: stat.size,
-                is_directory: stat.is_directory,
-                created: stat.created.0,
-                modified: stat.modified.0,
-                accessed: Some(stat.accessed.0),
+impl SambaServerConfig {
+    pub fn to_client_config(&self, timeout: Duration) -> Vec<ClientConfig> {
+        self.host
+            .iter()
+            .map(|s| ClientConfig {
+                addr: format!("{}:{}", s, self.port.unwrap_or(445)),
+                timeout,
+                username: self.username.clone(),
+                password: self.password.clone(),
+                domain: self.domain.clone().unwrap_or("".to_string()),
+                auto_reconnect: true,
+                compression: false,
+                dfs_enabled: false,
+                dfs_target_overrides: Default::default(),
             })
+            .collect()
+    }
+}
+
+#[uniffi::export]
+pub async fn connect_samba(config: SambaServerConfig) -> Option<Arc<SmbFileSystem>> {
+    let timeout = Duration::from_secs(3);
+
+    for cnf in config.to_client_config(timeout) {
+        let client = SmbClient::connect(cnf).await;
+
+        if client.is_err() {
+            continue;
+        }
+        let mut client = client.unwrap();
+        if let Ok(tree) = client.connect_share(&config.share_name).await {
+            return Some(Arc::new(SmbFileSystem {
+                client: Mutex::new(client),
+                tree: Mutex::new(tree),
+            }));
+        }
+    }
+    None
+}
+
+#[uniffi::export]
+impl SmbFileSystem {
+    pub async fn metadata(&self, path: &str) -> Option<SmbMetadata> {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+        let stat = client.stat(&mut *tree, path).await.ok()?;
+        Some(SmbMetadata {
+            is_directory: stat.is_directory,
+            is_file: !stat.is_directory,
+            size: stat.size,
+        })
+    }
+
+    pub async fn list_directory(&self, path: &str) -> Option<Vec<SmbDirEntry>> {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+        let list = client.list_directory(&mut *tree, path).await.ok()?;
+        Some(
+            list.into_iter()
+                .map(|item| SmbDirEntry {
+                    name: item.name,
+                    is_directory: item.is_directory,
+                    size: item.size,
+                })
+                .collect(),
+        )
+    }
+
+    pub async fn open_read(&self, path: &str) -> Option<Arc<SmbFileReader>> {
+        let mut tree = self.tree.lock().await;
+        let client = self.client.lock().await;
+        let file = client.open_file_reader(&mut *tree, path).await.ok()?;
+        Some(Arc::new(SmbFileReader {
+            reader: Mutex::new(Some(file)),
+        }))
+    }
+
+    pub async fn open_write(&self, path: &str, append: bool) -> Option<Arc<SmbFileWriter>> {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+
+        let file = if append {
+            client.create_file_writer(&mut *tree, path).await.ok()?
+        } else {
+            let size = tree.stat(client.connection_mut(), path).await.ok()?.size;
+            client
+                .create_file_writer_at(&mut *tree, path, size)
+                .await
+                .ok()?
+        };
+
+        Some(Arc::new(SmbFileWriter {
+            writer: Mutex::new(Some(file)),
+        }))
+    }
+
+    pub async fn create_directory(&self, path: &str) -> bool {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+        client.create_directory(&mut *tree, path).await.is_ok()
+    }
+
+    pub async fn delete_file(&self, path: &str) -> bool {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+        client.delete_file(&mut *tree, path).await.is_ok()
+    }
+
+    pub async fn delete_directory(&self, path: &str) -> bool {
+        let mut tree = self.tree.lock().await;
+        let mut client = self.client.lock().await;
+        client.delete_directory(&mut *tree, path).await.is_ok()
+    }
+}
+
+#[uniffi::export]
+impl SmbFileReader {
+    pub async fn read_at(&self, offset: u64, len: u64) -> Option<Vec<u8>> {
+        let reader = self.reader.lock().await;
+        if let Some(reader) = reader.as_ref() {
+            reader.read_at(offset, len).await.ok()
         } else {
             None
         }
     }
 
-    pub async fn create_directory(&self, tree: &UniSmbTree, path: &str) -> bool {
-        self.client
-            .lock()
-            .await
-            .create_directory(&mut *tree.tree.lock().await, path)
-            .await
-            .is_ok()
+    pub async fn close(&self) -> bool {
+        let mut guard = self.reader.lock().await;
+        if let Some(reader) = guard.take() {
+            reader.close().await.is_ok()
+        } else {
+            false
+        }
+    }
+}
+
+#[uniffi::export]
+impl SmbFileWriter {
+    pub async fn write_at(&self, offset: u64, data: Vec<u8>) -> Option<u32> {
+        let writer = self.writer.lock().await;
+        if let Some(writer) = writer.as_ref() {
+            writer
+                .write_chunk(offset, &data)
+                .await
+                .ok()
+                .map(|n| n as u32)
+        } else {
+            None
+        }
     }
 
-    pub async fn delete_directory(&self, tree: &UniSmbTree, path: &str) -> bool {
-        self.client
-            .lock()
-            .await
-            .delete_directory(&mut *tree.tree.lock().await, path)
-            .await
-            .is_ok()
+    pub async fn close(&self) -> bool {
+        let mut guard = self.writer.lock().await;
+        if let Some(writer) = guard.take() {
+            writer.finish().await.is_ok()
+        } else {
+            false
+        }
     }
 }

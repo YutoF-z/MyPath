@@ -45,6 +45,8 @@ object LocalFileSystem : FileSystem {
     override suspend fun metadata(path: Path): FileMetadata? =
         withContext(Dispatchers.IO) { SystemFileSystem.metadataOrNull(kPath(path)) }
 
+    override suspend fun resolveParent(path: Path): Path? = kPath(path).parent?.toPath()
+
     override suspend fun delete(path: Path): Boolean = withContext(Dispatchers.IO) {
         SystemFileSystem.delete(kPath(path))
         !exists(path)

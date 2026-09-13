@@ -5,7 +5,7 @@ jvm = "25"
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-core
 kotlinx-serialization = "1.11.0"
 
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 android-minSdk = "24"
 android-compileSdk = "37"
 
@@ -39,7 +39,7 @@ jna = { module = "net.java.dev.jna:jna", version = "5.19.1" }
 # https://kotlinlang.org/docs/dokka-get-started.html
 dokka = { id = "org.jetbrains.dokka", version = "2.2.0" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlin.plugin.serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin
-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.10" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2.4.20" }
 
 uniffi = { id = "ch.ubique.uniffi.plugin", version = "1.2.1" }
 
@@ -66,5 +66,7 @@ impl-android = [
 impl-samba = [
     "jna",
     "okio",
-    "kotlinx-coroutines-core"
+    "kotlinx-io-core",
+    "kotlinx-coroutines-core",
+    "kotlinx-serialization-core"
 ]

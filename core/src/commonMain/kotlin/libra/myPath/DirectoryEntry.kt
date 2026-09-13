@@ -4,7 +4,11 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class DirectoryEntry(override val path: Path, override val fileSystem: FileSystem) : Entry {
+data class DirectoryEntry(
+    override val path: Path,
+    override val fileSystem: FileSystem,
+    override val parent: Path? = null
+) : Entry {
     suspend infix fun findFile(name: String) = fileSystem.findFile(path, name)
     suspend infix fun createFile(name: String) = fileSystem.createFile(path, name)
     suspend infix fun findOrCreateFile(name: String) = fileSystem.findOrCreateFile(path, name)

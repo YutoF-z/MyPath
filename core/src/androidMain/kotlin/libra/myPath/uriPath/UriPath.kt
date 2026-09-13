@@ -62,8 +62,7 @@ sealed interface UriPath : MyPath {
             return FileMetadata(
                 isRegularFile = !isDirectory,
                 isDirectory = isDirectory,
-                size = getLongOrNull(getColumnIndexOrThrow(OpenableColumns.SIZE)),
-                lastModifiedAtMillis = getLongOrNull(getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED))
+                size = getLongOrNull(getColumnIndexOrThrow(OpenableColumns.SIZE))
             )
         }
     }

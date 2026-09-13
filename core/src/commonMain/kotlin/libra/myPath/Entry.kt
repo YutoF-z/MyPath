@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface Entry {
     val path: Path
+    val parent: Path?
     val fileSystem: FileSystem
 
 
@@ -12,4 +13,5 @@ sealed interface Entry {
     suspend fun exists() = fileSystem exists path
     suspend fun metadata() = fileSystem metadata path
     suspend fun isTreePath() = fileSystem isTreePath path
+    suspend fun resolveParent() = fileSystem resolveParent path
 }

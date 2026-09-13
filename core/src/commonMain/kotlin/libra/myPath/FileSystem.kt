@@ -25,6 +25,7 @@ interface FileSystem {
     suspend infix fun exists(path: Path): Boolean
     suspend infix fun metadata(path: Path): FileMetadata?
     suspend infix fun isTreePath(path: Path): Boolean? = metadata(path)?.isDirectory
+    suspend infix fun resolveParent(path: Path): Path?
 
 
     suspend infix fun delete(path: Path): Boolean

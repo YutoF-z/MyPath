@@ -680,29 +680,21 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-    external fun uniffi_samba_cargo_checksum_func_connect(
+    external fun uniffi_samba_cargo_checksum_func_connect_samba(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_connect_share(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_create_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_create_directory(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_delete_directory(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_file(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_delete_file(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_list_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_list_directory(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_metadata(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_read_file(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_read_file(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_read_file_pipelined(
-    ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_reconnect(
-    ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_stat(
-    ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_write_file(
-    ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbclient_write_file_pipelined(
+    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_write_file(
     ): Int
     external fun ffi_samba_cargo_uniffi_contract_version(
     ): Int
@@ -722,37 +714,25 @@ internal object UniffiLib {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "samba_cargo"))
         
     }
-    external fun uniffi_samba_cargo_fn_clone_unismbclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_samba_cargo_fn_clone_unismbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_samba_cargo_fn_free_unismbclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_samba_cargo_fn_free_unismbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_samba_cargo_fn_method_unismbclient_connect_share(`ptr`: Long,`shareName`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_create_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_create_directory(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_delete_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_delete_directory(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_delete_file(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_delete_file(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_list_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_list_directory(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_metadata(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_read_file(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_read_file(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_read_file_pipelined(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_write_file(`ptr`: Long,`path`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_reconnect(`ptr`: Long,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_stat(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_write_file(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbclient_write_file_pipelined(`ptr`: Long,`tree`: Long,`path`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_clone_unismbtree(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_samba_cargo_fn_free_unismbtree(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_samba_cargo_fn_func_connect(`addr`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_func_connect_samba(`config`: RustBuffer.ByValue,
     ): Long
     external fun ffi_samba_cargo_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -873,40 +853,28 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_samba_cargo_checksum_func_connect() != 64093) {
+    if ((lib.uniffi_samba_cargo_checksum_func_connect_samba() and 0xFFFF) != 39054) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_connect_share() != 15041) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_create_directory() and 0xFFFF) != 47390) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_create_directory() != 26793) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_directory() and 0xFFFF) != 30834) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_delete_directory() != 28791) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_file() and 0xFFFF) != 27547) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_delete_file() != 43041) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_list_directory() and 0xFFFF) != 16078) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_list_directory() != 5976) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_metadata() and 0xFFFF) != 44014) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_read_file() != 23028) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_read_file() and 0xFFFF) != 35497) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_read_file_pipelined() != 52866) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_reconnect() != 43058) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_stat() != 2882) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_write_file() != 33966) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_samba_cargo_checksum_method_unismbclient_write_file_pipelined() != 38364) {
+    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_write_file() and 0xFFFF) != 47528) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1104,6 +1072,33 @@ private class JavaLangRefCleanable(
     val cleanable: java.lang.ref.Cleaner.Cleanable
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterUShort: FfiConverter<UShort, Short> {
+    override fun lift(value: Short): UShort {
+        return value.toUShort()
+    }
+
+    fun lift(value: Int): UShort {
+        return value.toUShort()
+    }
+
+    override fun read(buf: ByteBuffer): UShort {
+        return lift(buf.getShort())
+    }
+
+    override fun lower(value: UShort): Short {
+        return value.toShort()
+    }
+
+    override fun allocationSize(value: UShort) = 2UL
+
+    override fun write(value: UShort, buf: ByteBuffer) {
+        buf.putShort(value.toShort())
+    }
 }
 
 /**
@@ -1324,34 +1319,26 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 //
 
 
-public interface UniSmbClientInterface {
+public interface UniSmbFileSystemInterface {
     
-    suspend fun `connectShare`(`shareName`: kotlin.String): UniSmbTree?
+    suspend fun `createDirectory`(`path`: kotlin.String): kotlin.Boolean
     
-    suspend fun `createDirectory`(`tree`: UniSmbTree, `path`: kotlin.String): kotlin.Boolean
+    suspend fun `deleteDirectory`(`path`: kotlin.String): kotlin.Boolean
     
-    suspend fun `deleteDirectory`(`tree`: UniSmbTree, `path`: kotlin.String): kotlin.Boolean
+    suspend fun `deleteFile`(`path`: kotlin.String): kotlin.Boolean
     
-    suspend fun `deleteFile`(`tree`: UniSmbTree, `path`: kotlin.String)
+    suspend fun `listDirectory`(`path`: kotlin.String): List<SmbDirEntry>?
     
-    suspend fun `listDirectory`(`tree`: UniSmbTree, `path`: kotlin.String): List<FileInfo>?
+    suspend fun `metadata`(`path`: kotlin.String): SmbMetadata?
     
-    suspend fun `readFile`(`tree`: UniSmbTree, `path`: kotlin.String): kotlin.ByteArray?
+    suspend fun `readFile`(`path`: kotlin.String): kotlin.ByteArray?
     
-    suspend fun `readFilePipelined`(`tree`: UniSmbTree, `path`: kotlin.String): kotlin.ByteArray?
-    
-    suspend fun `reconnect`(): kotlin.Boolean
-    
-    suspend fun `stat`(`tree`: UniSmbTree, `path`: kotlin.String): FileInfo?
-    
-    suspend fun `writeFile`(`tree`: UniSmbTree, `path`: kotlin.String, `data`: kotlin.ByteArray)
-    
-    suspend fun `writeFilePipelined`(`tree`: UniSmbTree, `path`: kotlin.String, `data`: kotlin.ByteArray)
+    suspend fun `writeFile`(`path`: kotlin.String, `data`: kotlin.ByteArray): kotlin.Boolean
     
     companion object
 }
 
-open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
+open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterface
 {
 
     @Suppress("UNUSED_PARAMETER")
@@ -1435,7 +1422,7 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_samba_cargo_fn_free_unismbclient(handle, status)
+                UniffiLib.uniffi_samba_cargo_fn_free_unismbfilesystem(handle, status)
             }
         }
     }
@@ -1448,40 +1435,18 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_samba_cargo_fn_clone_unismbclient(handle, status)
+            UniffiLib.uniffi_samba_cargo_fn_clone_unismbfilesystem(handle, status)
         }
     }
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connectShare`(`shareName`: kotlin.String) : UniSmbTree? {
+    override suspend fun `createDirectory`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_connect_share(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_create_directory(
                 uniffiHandle,
                 
-        FfiConverterString.lower(`shareName`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeUniSmbTree.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createDirectory`(`tree`: UniSmbTree, `path`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_create_directory(
-                uniffiHandle,
-                
-        FfiConverterTypeUniSmbTree.lower(`tree`),
         FfiConverterString.lower(`path`),
             )
         },
@@ -1497,13 +1462,12 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteDirectory`(`tree`: UniSmbTree, `path`: kotlin.String) : kotlin.Boolean {
+    override suspend fun `deleteDirectory`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_delete_directory(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_delete_directory(
                 uniffiHandle,
                 
-        FfiConverterTypeUniSmbTree.lower(`tree`),
         FfiConverterString.lower(`path`),
             )
         },
@@ -1519,22 +1483,20 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteFile`(`tree`: UniSmbTree, `path`: kotlin.String) {
+    override suspend fun `deleteFile`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_delete_file(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_delete_file(
                 uniffiHandle,
                 
-        FfiConverterTypeUniSmbTree.lower(`tree`),
         FfiConverterString.lower(`path`),
             )
         },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
         // lift function
-        { Unit },
-        
+        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -1542,13 +1504,12 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `listDirectory`(`tree`: UniSmbTree, `path`: kotlin.String) : List<FileInfo>? {
+    override suspend fun `listDirectory`(`path`: kotlin.String) : List<SmbDirEntry>? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_list_directory(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_list_directory(
                 uniffiHandle,
                 
-        FfiConverterTypeUniSmbTree.lower(`tree`),
         FfiConverterString.lower(`path`),
             )
         },
@@ -1556,7 +1517,7 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
         { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterOptionalSequenceTypeFileInfo.lift(it) },
+        { FfiConverterOptionalSequenceTypeSmbDirEntry.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -1564,13 +1525,33 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readFile`(`tree`: UniSmbTree, `path`: kotlin.String) : kotlin.ByteArray? {
+    override suspend fun `metadata`(`path`: kotlin.String) : SmbMetadata? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_read_file(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_metadata(
                 uniffiHandle,
                 
-        FfiConverterTypeUniSmbTree.lower(`tree`),
+        FfiConverterString.lower(`path`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeSmbMetadata.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `readFile`(`path`: kotlin.String) : kotlin.ByteArray? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_read_file(
+                uniffiHandle,
+                
         FfiConverterString.lower(`path`),
             )
         },
@@ -1586,34 +1567,14 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readFilePipelined`(`tree`: UniSmbTree, `path`: kotlin.String) : kotlin.ByteArray? {
+    override suspend fun `writeFile`(`path`: kotlin.String, `data`: kotlin.ByteArray) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_read_file_pipelined(
+            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_write_file(
                 uniffiHandle,
                 
-        FfiConverterTypeUniSmbTree.lower(`tree`),
         FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalByteArray.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `reconnect`() : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_reconnect(
-                uniffiHandle,
-                
+        FfiConverterByteArray.lower(`data`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
@@ -1621,76 +1582,6 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
         // lift function
         { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `stat`(`tree`: UniSmbTree, `path`: kotlin.String) : FileInfo? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_stat(
-                uniffiHandle,
-                
-        FfiConverterTypeUniSmbTree.lower(`tree`),
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeFileInfo.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `writeFile`(`tree`: UniSmbTree, `path`: kotlin.String, `data`: kotlin.ByteArray) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_write_file(
-                uniffiHandle,
-                
-        FfiConverterTypeUniSmbTree.lower(`tree`),
-        FfiConverterString.lower(`path`),
-        FfiConverterByteArray.lower(`data`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-    
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `writeFilePipelined`(`tree`: UniSmbTree, `path`: kotlin.String, `data`: kotlin.ByteArray) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbclient_write_file_pipelined(
-                uniffiHandle,
-                
-        FfiConverterTypeUniSmbTree.lower(`tree`),
-        FfiConverterString.lower(`path`),
-        FfiConverterByteArray.lower(`data`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-        
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -1714,280 +1605,40 @@ open class UniSmbClient: Disposable, AutoCloseable, UniSmbClientInterface
 /**
  * @suppress
  */
-public object FfiConverterTypeUniSmbClient: FfiConverter<UniSmbClient, Long> {
-    override fun lower(value: UniSmbClient): Long {
+public object FfiConverterTypeUniSmbFileSystem: FfiConverter<UniSmbFileSystem, Long> {
+    override fun lower(value: UniSmbFileSystem): Long {
         return value.uniffiCloneHandle()
     }
 
-    override fun lift(value: Long): UniSmbClient {
-        return UniSmbClient(UniffiWithHandle, value)
+    override fun lift(value: Long): UniSmbFileSystem {
+        return UniSmbFileSystem(UniffiWithHandle, value)
     }
 
-    override fun read(buf: ByteBuffer): UniSmbClient {
+    override fun read(buf: ByteBuffer): UniSmbFileSystem {
         return lift(buf.getLong())
     }
 
-    override fun allocationSize(value: UniSmbClient) = 8UL
+    override fun allocationSize(value: UniSmbFileSystem) = 8UL
 
-    override fun write(value: UniSmbClient, buf: ByteBuffer) {
-        buf.putLong(lower(value))
-    }
-}
-
-
-// This template implements a class for working with a Rust struct via a handle
-// to the live Rust struct on the other side of the FFI.
-//
-// There's some subtlety here, because we have to be careful not to operate on a Rust
-// struct after it has been dropped, and because we must expose a public API for freeing
-// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
-//
-//   * Each instance holds an opaque handle to the underlying Rust struct.
-//     Method calls need to read this handle from the object's state and pass it in to
-//     the Rust FFI.
-//
-//   * When an instance is no longer needed, its handle should be passed to a
-//     special destructor function provided by the Rust FFI, which will drop the
-//     underlying Rust struct.
-//
-//   * Given an instance, calling code is expected to call the special
-//     `destroy` method in order to free it after use, either by calling it explicitly
-//     or by using a higher-level helper like the `use` method. Failing to do so risks
-//     leaking the underlying Rust struct.
-//
-//   * We can't assume that calling code will do the right thing, and must be prepared
-//     to handle Kotlin method calls executing concurrently with or even after a call to
-//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
-//
-//   * We must never allow Rust code to operate on the underlying Rust struct after
-//     the destructor has been called, and must never call the destructor more than once.
-//     Doing so may trigger memory unsafety.
-//
-//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
-//     is implemented to call the destructor when the Kotlin object becomes unreachable.
-//     This is done in a background thread. This is not a panacea, and client code should be aware that
-//      1. the thread may starve if some there are objects that have poorly performing
-//     `drop` methods or do significant work in their `drop` methods.
-//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
-//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
-//
-// If we try to implement this with mutual exclusion on access to the handle, there is the
-// possibility of a race between a method call and a concurrent call to `destroy`:
-//
-//    * Thread A starts a method call, reads the value of the handle, but is interrupted
-//      before it can pass the handle over the FFI to Rust.
-//    * Thread B calls `destroy` and frees the underlying Rust struct.
-//    * Thread A resumes, passing the already-read handle value to Rust and triggering
-//      a use-after-free.
-//
-// One possible solution would be to use a `ReadWriteLock`, with each method call taking
-// a read lock (and thus allowed to run concurrently) and the special `destroy` method
-// taking a write lock (and thus blocking on live method calls). However, we aim not to
-// generate methods with any hidden blocking semantics, and a `destroy` method that might
-// block if called incorrectly seems to meet that bar.
-//
-// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
-// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
-// has been called. These are updated according to the following rules:
-//
-//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
-//      The initial value for the flag is false.
-//
-//    * At the start of each method call, we atomically check the counter.
-//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
-//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
-//
-//    * At the end of each method call, we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-//    * When `destroy` is called, we atomically flip the flag from false to true.
-//      If the flag was already true we silently fail.
-//      Otherwise we atomically decrement and check the counter.
-//      If it has reached zero then we destroy the underlying Rust struct.
-//
-// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
-// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
-//
-// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
-// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
-// of the underlying Rust code.
-//
-// This makes a cleaner a better alternative to _not_ calling `destroy()` as
-// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
-// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
-// thread may be starved, and the app will leak memory.
-//
-// In this case, `destroy`ing manually may be a better solution.
-//
-// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
-// with Rust peers are reclaimed:
-//
-// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
-// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
-// 3. The memory is reclaimed when the process terminates.
-//
-// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
-//
-
-
-public interface UniSmbTreeInterface {
-    
-    companion object
-}
-
-open class UniSmbTree: Disposable, AutoCloseable, UniSmbTreeInterface
-{
-
-    @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
-    constructor(withHandle: UniffiWithHandle, handle: Long) {
-        this.handle = handle
-        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
-    }
-
-    /**
-     * @suppress
-     *
-     * This constructor can be used to instantiate a fake object. Only used for tests. Any
-     * attempt to actually use an object constructed this way will fail as there is no
-     * connected Rust object.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    constructor(noHandle: NoHandle) {
-        this.handle = 0
-        this.cleanable = null
-    }
-
-    protected val handle: Long
-    protected val cleanable: UniffiCleaner.Cleanable?
-
-    private val wasDestroyed = AtomicBoolean(false)
-    private val callCounter = AtomicLong(1)
-
-    /**
-     * Whether the current object has been destroyed and its reference is gone in the Rust side.
-     */
-    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
-
-    override fun destroy() {
-        // Only allow a single call to this method.
-        // TODO: maybe we should log a warning if called more than once?
-        if (this.wasDestroyed.compareAndSet(false, true)) {
-            // This decrement always matches the initial count of 1 given at creation time.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable?.clean()
-            }
-        }
-    }
-
-    @Synchronized
-    override fun close() {
-        this.destroy()
-    }
-
-    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
-        // Check and increment the call counter, to keep the object alive.
-        // This needs a compare-and-set retry loop in case of concurrent updates.
-        do {
-            val c = this.callCounter.get()
-            if (c == 0L) {
-                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
-            }
-            if (c == Long.MAX_VALUE) {
-                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
-            }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
-        // Now we can safely do the method call without the handle being freed concurrently.
-        try {
-            return block(this.uniffiCloneHandle())
-        } finally {
-            // This decrement always matches the increment we performed above.
-            if (this.callCounter.decrementAndGet() == 0L) {
-                cleanable?.clean()
-            }
-        }
-    }
-
-    // Use a static inner class instead of a closure so as not to accidentally
-    // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(private val handle: Long) : Runnable {
-        override fun run() {
-            if (handle == 0.toLong()) {
-                // Fake object created with `NoHandle`, don't try to free.
-                return;
-            }
-            uniffiRustCall { status ->
-                UniffiLib.uniffi_samba_cargo_fn_free_unismbtree(handle, status)
-            }
-        }
-    }
-
-    /**
-     * @suppress
-     */
-    fun uniffiCloneHandle(): Long {
-        if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object");
-        }
-        return uniffiRustCall() { status ->
-            UniffiLib.uniffi_samba_cargo_fn_clone_unismbtree(handle, status)
-        }
-    }
-
-    
-
-    
-
-
-    
-    
-    /**
-     * @suppress
-     */
-    companion object
-    
-}
-
-
-/**
- * @suppress
- */
-public object FfiConverterTypeUniSmbTree: FfiConverter<UniSmbTree, Long> {
-    override fun lower(value: UniSmbTree): Long {
-        return value.uniffiCloneHandle()
-    }
-
-    override fun lift(value: Long): UniSmbTree {
-        return UniSmbTree(UniffiWithHandle, value)
-    }
-
-    override fun read(buf: ByteBuffer): UniSmbTree {
-        return lift(buf.getLong())
-    }
-
-    override fun allocationSize(value: UniSmbTree) = 8UL
-
-    override fun write(value: UniSmbTree, buf: ByteBuffer) {
+    override fun write(value: UniSmbFileSystem, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
 
 
 
-data class FileInfo (
-    var `name`: kotlin.String
+data class SambaServerConfig (
+    var `host`: List<kotlin.String>
     , 
-    var `size`: kotlin.ULong
+    var `port`: kotlin.UShort?
     , 
-    var `isDirectory`: kotlin.Boolean
+    var `shareName`: kotlin.String
     , 
-    var `created`: kotlin.ULong
+    var `username`: kotlin.String
     , 
-    var `modified`: kotlin.ULong
+    var `password`: kotlin.String
     , 
-    var `accessed`: kotlin.ULong?
+    var `domain`: kotlin.String?
     
 ){
     
@@ -2001,34 +1652,120 @@ data class FileInfo (
 /**
  * @suppress
  */
-public object FfiConverterTypeFileInfo: FfiConverterRustBuffer<FileInfo> {
-    override fun read(buf: ByteBuffer): FileInfo {
-        return FileInfo(
+public object FfiConverterTypeSambaServerConfig: FfiConverterRustBuffer<SambaServerConfig> {
+    override fun read(buf: ByteBuffer): SambaServerConfig {
+        return SambaServerConfig(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalUShort.read(buf),
             FfiConverterString.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterBoolean.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterOptionalULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
-    override fun allocationSize(value: FileInfo) = (
-            FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterULong.allocationSize(value.`size`) +
-            FfiConverterBoolean.allocationSize(value.`isDirectory`) +
-            FfiConverterULong.allocationSize(value.`created`) +
-            FfiConverterULong.allocationSize(value.`modified`) +
-            FfiConverterOptionalULong.allocationSize(value.`accessed`)
+    override fun allocationSize(value: SambaServerConfig) = (
+            FfiConverterSequenceString.allocationSize(value.`host`) +
+            FfiConverterOptionalUShort.allocationSize(value.`port`) +
+            FfiConverterString.allocationSize(value.`shareName`) +
+            FfiConverterString.allocationSize(value.`username`) +
+            FfiConverterString.allocationSize(value.`password`) +
+            FfiConverterOptionalString.allocationSize(value.`domain`)
     )
 
-    override fun write(value: FileInfo, buf: ByteBuffer) {
+    override fun write(value: SambaServerConfig, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`host`, buf)
+            FfiConverterOptionalUShort.write(value.`port`, buf)
+            FfiConverterString.write(value.`shareName`, buf)
+            FfiConverterString.write(value.`username`, buf)
+            FfiConverterString.write(value.`password`, buf)
+            FfiConverterOptionalString.write(value.`domain`, buf)
+    }
+}
+
+
+
+data class SmbDirEntry (
+    var `name`: kotlin.String
+    , 
+    var `isDirectory`: kotlin.Boolean
+    , 
+    var `size`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSmbDirEntry: FfiConverterRustBuffer<SmbDirEntry> {
+    override fun read(buf: ByteBuffer): SmbDirEntry {
+        return SmbDirEntry(
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SmbDirEntry) = (
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterBoolean.allocationSize(value.`isDirectory`) +
+            FfiConverterULong.allocationSize(value.`size`)
+    )
+
+    override fun write(value: SmbDirEntry, buf: ByteBuffer) {
             FfiConverterString.write(value.`name`, buf)
-            FfiConverterULong.write(value.`size`, buf)
             FfiConverterBoolean.write(value.`isDirectory`, buf)
-            FfiConverterULong.write(value.`created`, buf)
-            FfiConverterULong.write(value.`modified`, buf)
-            FfiConverterOptionalULong.write(value.`accessed`, buf)
+            FfiConverterULong.write(value.`size`, buf)
+    }
+}
+
+
+
+data class SmbMetadata (
+    var `isDirectory`: kotlin.Boolean
+    , 
+    var `isFile`: kotlin.Boolean
+    , 
+    var `size`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSmbMetadata: FfiConverterRustBuffer<SmbMetadata> {
+    override fun read(buf: ByteBuffer): SmbMetadata {
+        return SmbMetadata(
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SmbMetadata) = (
+            FfiConverterBoolean.allocationSize(value.`isDirectory`) +
+            FfiConverterBoolean.allocationSize(value.`isFile`) +
+            FfiConverterULong.allocationSize(value.`size`)
+    )
+
+    override fun write(value: SmbMetadata, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`isDirectory`, buf)
+            FfiConverterBoolean.write(value.`isFile`, buf)
+            FfiConverterULong.write(value.`size`, buf)
     }
 }
 
@@ -2038,28 +1775,60 @@ public object FfiConverterTypeFileInfo: FfiConverterRustBuffer<FileInfo> {
 /**
  * @suppress
  */
-public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
-    override fun read(buf: ByteBuffer): kotlin.ULong? {
+public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?> {
+    override fun read(buf: ByteBuffer): kotlin.UShort? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterULong.read(buf)
+        return FfiConverterUShort.read(buf)
     }
 
-    override fun allocationSize(value: kotlin.ULong?): ULong {
+    override fun allocationSize(value: kotlin.UShort?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterULong.allocationSize(value)
+            return 1UL + FfiConverterUShort.allocationSize(value)
         }
     }
 
-    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+    override fun write(value: kotlin.UShort?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterULong.write(value, buf)
+            FfiConverterUShort.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
+    override fun read(buf: ByteBuffer): kotlin.String? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterString.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.String?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterString.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.String?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterString.write(value, buf)
         }
     }
 }
@@ -2102,28 +1871,28 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeUniSmbClient: FfiConverterRustBuffer<UniSmbClient?> {
-    override fun read(buf: ByteBuffer): UniSmbClient? {
+public object FfiConverterOptionalTypeUniSmbFileSystem: FfiConverterRustBuffer<UniSmbFileSystem?> {
+    override fun read(buf: ByteBuffer): UniSmbFileSystem? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeUniSmbClient.read(buf)
+        return FfiConverterTypeUniSmbFileSystem.read(buf)
     }
 
-    override fun allocationSize(value: UniSmbClient?): ULong {
+    override fun allocationSize(value: UniSmbFileSystem?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeUniSmbClient.allocationSize(value)
+            return 1UL + FfiConverterTypeUniSmbFileSystem.allocationSize(value)
         }
     }
 
-    override fun write(value: UniSmbClient?, buf: ByteBuffer) {
+    override fun write(value: UniSmbFileSystem?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeUniSmbClient.write(value, buf)
+            FfiConverterTypeUniSmbFileSystem.write(value, buf)
         }
     }
 }
@@ -2134,28 +1903,28 @@ public object FfiConverterOptionalTypeUniSmbClient: FfiConverterRustBuffer<UniSm
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeUniSmbTree: FfiConverterRustBuffer<UniSmbTree?> {
-    override fun read(buf: ByteBuffer): UniSmbTree? {
+public object FfiConverterOptionalTypeSmbMetadata: FfiConverterRustBuffer<SmbMetadata?> {
+    override fun read(buf: ByteBuffer): SmbMetadata? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeUniSmbTree.read(buf)
+        return FfiConverterTypeSmbMetadata.read(buf)
     }
 
-    override fun allocationSize(value: UniSmbTree?): ULong {
+    override fun allocationSize(value: SmbMetadata?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeUniSmbTree.allocationSize(value)
+            return 1UL + FfiConverterTypeSmbMetadata.allocationSize(value)
         }
     }
 
-    override fun write(value: UniSmbTree?, buf: ByteBuffer) {
+    override fun write(value: SmbMetadata?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeUniSmbTree.write(value, buf)
+            FfiConverterTypeSmbMetadata.write(value, buf)
         }
     }
 }
@@ -2166,28 +1935,28 @@ public object FfiConverterOptionalTypeUniSmbTree: FfiConverterRustBuffer<UniSmbT
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeFileInfo: FfiConverterRustBuffer<FileInfo?> {
-    override fun read(buf: ByteBuffer): FileInfo? {
+public object FfiConverterOptionalSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<SmbDirEntry>?> {
+    override fun read(buf: ByteBuffer): List<SmbDirEntry>? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeFileInfo.read(buf)
+        return FfiConverterSequenceTypeSmbDirEntry.read(buf)
     }
 
-    override fun allocationSize(value: FileInfo?): ULong {
+    override fun allocationSize(value: List<SmbDirEntry>?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeFileInfo.allocationSize(value)
+            return 1UL + FfiConverterSequenceTypeSmbDirEntry.allocationSize(value)
         }
     }
 
-    override fun write(value: FileInfo?, buf: ByteBuffer) {
+    override fun write(value: List<SmbDirEntry>?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeFileInfo.write(value, buf)
+            FfiConverterSequenceTypeSmbDirEntry.write(value, buf)
         }
     }
 }
@@ -2198,56 +1967,52 @@ public object FfiConverterOptionalTypeFileInfo: FfiConverterRustBuffer<FileInfo?
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceTypeFileInfo: FfiConverterRustBuffer<List<FileInfo>?> {
-    override fun read(buf: ByteBuffer): List<FileInfo>? {
-        if (buf.get().toInt() == 0) {
-            return null
-        }
-        return FfiConverterSequenceTypeFileInfo.read(buf)
-    }
-
-    override fun allocationSize(value: List<FileInfo>?): ULong {
-        if (value == null) {
-            return 1UL
-        } else {
-            return 1UL + FfiConverterSequenceTypeFileInfo.allocationSize(value)
-        }
-    }
-
-    override fun write(value: List<FileInfo>?, buf: ByteBuffer) {
-        if (value == null) {
-            buf.put(0)
-        } else {
-            buf.put(1)
-            FfiConverterSequenceTypeFileInfo.write(value, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceTypeFileInfo: FfiConverterRustBuffer<List<FileInfo>> {
-    override fun read(buf: ByteBuffer): List<FileInfo> {
+public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
+    override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
-        return List<FileInfo>(len) {
-            FfiConverterTypeFileInfo.read(buf)
+        return List<kotlin.String>(len) {
+            FfiConverterString.read(buf)
         }
     }
 
-    override fun allocationSize(value: List<FileInfo>): ULong {
+    override fun allocationSize(value: List<kotlin.String>): ULong {
         val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterTypeFileInfo.allocationSize(it) }.sum()
+        val sizeForItems = value.map { FfiConverterString.allocationSize(it) }.sum()
         return sizeForLength + sizeForItems
     }
 
-    override fun write(value: List<FileInfo>, buf: ByteBuffer) {
+    override fun write(value: List<kotlin.String>, buf: ByteBuffer) {
         buf.putInt(value.size)
         value.iterator().forEach {
-            FfiConverterTypeFileInfo.write(it, buf)
+            FfiConverterString.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<SmbDirEntry>> {
+    override fun read(buf: ByteBuffer): List<SmbDirEntry> {
+        val len = buf.getInt()
+        return List<SmbDirEntry>(len) {
+            FfiConverterTypeSmbDirEntry.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SmbDirEntry>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSmbDirEntry.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SmbDirEntry>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSmbDirEntry.write(it, buf)
         }
     }
 }
@@ -2260,17 +2025,15 @@ public object FfiConverterSequenceTypeFileInfo: FfiConverterRustBuffer<List<File
 
 
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-     suspend fun `connect`(`addr`: kotlin.String, `username`: kotlin.String, `password`: kotlin.String) : UniSmbClient? {
+     suspend fun `connectSamba`(`config`: SambaServerConfig) : UniSmbFileSystem? {
         return uniffiRustCallAsync(
-        UniffiLib.uniffi_samba_cargo_fn_func_connect(
-        FfiConverterString.lower(`addr`),
-        FfiConverterString.lower(`username`),
-        FfiConverterString.lower(`password`),),
+        UniffiLib.uniffi_samba_cargo_fn_func_connect_samba(
+        FfiConverterTypeSambaServerConfig.lower(`config`),),
         { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
         { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterOptionalTypeUniSmbClient.lift(it) },
+        { FfiConverterOptionalTypeUniSmbFileSystem.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )

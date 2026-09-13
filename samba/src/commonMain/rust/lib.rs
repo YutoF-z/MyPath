@@ -183,16 +183,15 @@ impl SmbFileReader {
 
 #[uniffi::export]
 impl SmbFileWriter {
-    pub async fn write_at(&self, offset: u64, data: Vec<u8>) -> Option<u32> {
-        let writer = self.writer.lock().await;
-        if let Some(writer) = writer.as_ref() {
+    pub async fn write_at(&self, data: Vec<u8>) -> bool {
+        let mut writer = self.writer.lock().await;
+        if let Some(writer) = writer.as_mut() {
             writer
-                .write_chunk(offset, &data)
+                .write_chunk(&data)
                 .await
-                .ok()
-                .map(|n| n as u32)
+                .is_ok()
         } else {
-            None
+            false
         }
     }
 

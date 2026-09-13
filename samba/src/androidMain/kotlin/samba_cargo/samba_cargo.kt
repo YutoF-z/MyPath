@@ -682,19 +682,27 @@ internal object IntegrityCheckingUniffiLib {
     }
     external fun uniffi_samba_cargo_checksum_func_connect_samba(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_create_directory(
+    external fun uniffi_samba_cargo_checksum_method_smbfilereader_close(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_directory(
+    external fun uniffi_samba_cargo_checksum_method_smbfilereader_read_at(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_file(
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_create_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_list_directory(
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_delete_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_metadata(
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_delete_file(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_read_file(
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_list_directory(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_unismbfilesystem_write_file(
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_metadata(
+    ): Int
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_open_read(
+    ): Int
+    external fun uniffi_samba_cargo_checksum_method_smbfilesystem_open_write(
+    ): Int
+    external fun uniffi_samba_cargo_checksum_method_smbfilewriter_close(
+    ): Int
+    external fun uniffi_samba_cargo_checksum_method_smbfilewriter_write_at(
     ): Int
     external fun ffi_samba_cargo_uniffi_contract_version(
     ): Int
@@ -714,23 +722,39 @@ internal object UniffiLib {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "samba_cargo"))
         
     }
-    external fun uniffi_samba_cargo_fn_clone_unismbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_samba_cargo_fn_clone_smbfilereader(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_samba_cargo_fn_free_unismbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_samba_cargo_fn_free_smbfilereader(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_create_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_smbfilereader_close(`ptr`: Long,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_delete_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_smbfilereader_read_at(`ptr`: Long,`offset`: Long,`len`: Long,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_delete_file(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_clone_smbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_list_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_free_smbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_metadata(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_read_file(`ptr`: Long,`path`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(`ptr`: Long,`path`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_samba_cargo_fn_method_unismbfilesystem_write_file(`ptr`: Long,`path`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_metadata(`ptr`: Long,`path`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_read(`ptr`: Long,`path`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_write(`ptr`: Long,`path`: RustBuffer.ByValue,`append`: Byte,
+    ): Long
+    external fun uniffi_samba_cargo_fn_clone_smbfilewriter(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_samba_cargo_fn_free_smbfilewriter(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_samba_cargo_fn_method_smbfilewriter_close(`ptr`: Long,
+    ): Long
+    external fun uniffi_samba_cargo_fn_method_smbfilewriter_write_at(`ptr`: Long,`data`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_samba_cargo_fn_func_connect_samba(`config`: RustBuffer.ByValue,
     ): Long
@@ -853,28 +877,40 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_samba_cargo_checksum_func_connect_samba() and 0xFFFF) != 39054) {
+    if ((lib.uniffi_samba_cargo_checksum_func_connect_samba() and 0xFFFF) != 47307) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_create_directory() and 0xFFFF) != 47390) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilereader_close() and 0xFFFF) != 63292) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_directory() and 0xFFFF) != 30834) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilereader_read_at() and 0xFFFF) != 26798) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_delete_file() and 0xFFFF) != 27547) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_create_directory() and 0xFFFF) != 33757) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_list_directory() and 0xFFFF) != 16078) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_delete_directory() and 0xFFFF) != 39676) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_metadata() and 0xFFFF) != 44014) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_delete_file() and 0xFFFF) != 7210) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_read_file() and 0xFFFF) != 35497) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_list_directory() and 0xFFFF) != 35773) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_unismbfilesystem_write_file() and 0xFFFF) != 47528) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_metadata() and 0xFFFF) != 55801) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_open_read() and 0xFFFF) != 38890) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_open_write() and 0xFFFF) != 62446) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilewriter_close() and 0xFFFF) != 13762) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilewriter_write_at() and 0xFFFF) != 36620) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1319,26 +1355,16 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 //
 
 
-public interface UniSmbFileSystemInterface {
+public interface SmbFileReaderInterface {
     
-    suspend fun `createDirectory`(`path`: kotlin.String): kotlin.Boolean
+    suspend fun `close`(): kotlin.Boolean
     
-    suspend fun `deleteDirectory`(`path`: kotlin.String): kotlin.Boolean
-    
-    suspend fun `deleteFile`(`path`: kotlin.String): kotlin.Boolean
-    
-    suspend fun `listDirectory`(`path`: kotlin.String): List<SmbDirEntry>?
-    
-    suspend fun `metadata`(`path`: kotlin.String): SmbMetadata?
-    
-    suspend fun `readFile`(`path`: kotlin.String): kotlin.ByteArray?
-    
-    suspend fun `writeFile`(`path`: kotlin.String, `data`: kotlin.ByteArray): kotlin.Boolean
+    suspend fun `readAt`(`offset`: kotlin.ULong, `len`: kotlin.ULong): kotlin.ByteArray?
     
     companion object
 }
 
-open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterface
+open class SmbFileReader: Disposable, AutoCloseable, SmbFileReaderInterface
 {
 
     @Suppress("UNUSED_PARAMETER")
@@ -1422,7 +1448,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_samba_cargo_fn_free_unismbfilesystem(handle, status)
+                UniffiLib.uniffi_samba_cargo_fn_free_smbfilereader(handle, status)
             }
         }
     }
@@ -1435,7 +1461,303 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_samba_cargo_fn_clone_unismbfilesystem(handle, status)
+            UniffiLib.uniffi_samba_cargo_fn_clone_smbfilereader(handle, status)
+        }
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `close`() : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_close(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `readAt`(`offset`: kotlin.ULong, `len`: kotlin.ULong) : kotlin.ByteArray? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_read_at(
+                uniffiHandle,
+                
+        FfiConverterULong.lower(`offset`),
+        FfiConverterULong.lower(`len`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalByteArray.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSmbFileReader: FfiConverter<SmbFileReader, Long> {
+    override fun lower(value: SmbFileReader): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): SmbFileReader {
+        return SmbFileReader(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): SmbFileReader {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: SmbFileReader) = 8UL
+
+    override fun write(value: SmbFileReader, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+public interface SmbFileSystemInterface {
+    
+    suspend fun `createDirectory`(`path`: kotlin.String): kotlin.Boolean
+    
+    suspend fun `deleteDirectory`(`path`: kotlin.String): kotlin.Boolean
+    
+    suspend fun `deleteFile`(`path`: kotlin.String): kotlin.Boolean
+    
+    suspend fun `listDirectory`(`path`: kotlin.String): List<SmbDirEntry>?
+    
+    suspend fun `metadata`(`path`: kotlin.String): SmbMetadata?
+    
+    suspend fun `openRead`(`path`: kotlin.String): SmbFileReader?
+    
+    suspend fun `openWrite`(`path`: kotlin.String, `append`: kotlin.Boolean): SmbFileWriter?
+    
+    companion object
+}
+
+open class SmbFileSystem: Disposable, AutoCloseable, SmbFileSystemInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_samba_cargo_fn_free_smbfilesystem(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_samba_cargo_fn_clone_smbfilesystem(handle, status)
         }
     }
 
@@ -1444,7 +1766,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
     override suspend fun `createDirectory`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_create_directory(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1465,7 +1787,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
     override suspend fun `deleteDirectory`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_delete_directory(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1486,7 +1808,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
     override suspend fun `deleteFile`(`path`: kotlin.String) : kotlin.Boolean {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_delete_file(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1507,7 +1829,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
     override suspend fun `listDirectory`(`path`: kotlin.String) : List<SmbDirEntry>? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_list_directory(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1528,7 +1850,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
     override suspend fun `metadata`(`path`: kotlin.String) : SmbMetadata? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_metadata(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_metadata(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1546,10 +1868,10 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readFile`(`path`: kotlin.String) : kotlin.ByteArray? {
+    override suspend fun `openRead`(`path`: kotlin.String) : SmbFileReader? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_read_file(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_read(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
@@ -1559,7 +1881,7 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
         { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterOptionalByteArray.lift(it) },
+        { FfiConverterOptionalTypeSmbFileReader.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -1567,13 +1889,298 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
 
     
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `writeFile`(`path`: kotlin.String, `data`: kotlin.ByteArray) : kotlin.Boolean {
+    override suspend fun `openWrite`(`path`: kotlin.String, `append`: kotlin.Boolean) : SmbFileWriter? {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_unismbfilesystem_write_file(
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_write(
                 uniffiHandle,
                 
         FfiConverterString.lower(`path`),
+        FfiConverterBoolean.lower(`append`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeSmbFileWriter.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSmbFileSystem: FfiConverter<SmbFileSystem, Long> {
+    override fun lower(value: SmbFileSystem): Long {
+        return value.uniffiCloneHandle()
+    }
+
+    override fun lift(value: Long): SmbFileSystem {
+        return SmbFileSystem(UniffiWithHandle, value)
+    }
+
+    override fun read(buf: ByteBuffer): SmbFileSystem {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: SmbFileSystem) = 8UL
+
+    override fun write(value: SmbFileSystem, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+public interface SmbFileWriterInterface {
+    
+    suspend fun `close`(): kotlin.Boolean
+    
+    suspend fun `writeAt`(`data`: kotlin.ByteArray): kotlin.Boolean
+    
+    companion object
+}
+
+open class SmbFileWriter: Disposable, AutoCloseable, SmbFileWriterInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    /**
+     * Whether the current object has been destroyed and its reference is gone in the Rust side.
+     */
+    val uniffiIsDestroyed: Boolean get() = wasDestroyed.get()
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_samba_cargo_fn_free_smbfilewriter(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_samba_cargo_fn_clone_smbfilewriter(handle, status)
+        }
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `close`() : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_close(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `writeAt`(`data`: kotlin.ByteArray) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_write_at(
+                uniffiHandle,
+                
         FfiConverterByteArray.lower(`data`),
             )
         },
@@ -1605,22 +2212,22 @@ open class UniSmbFileSystem: Disposable, AutoCloseable, UniSmbFileSystemInterfac
 /**
  * @suppress
  */
-public object FfiConverterTypeUniSmbFileSystem: FfiConverter<UniSmbFileSystem, Long> {
-    override fun lower(value: UniSmbFileSystem): Long {
+public object FfiConverterTypeSmbFileWriter: FfiConverter<SmbFileWriter, Long> {
+    override fun lower(value: SmbFileWriter): Long {
         return value.uniffiCloneHandle()
     }
 
-    override fun lift(value: Long): UniSmbFileSystem {
-        return UniSmbFileSystem(UniffiWithHandle, value)
+    override fun lift(value: Long): SmbFileWriter {
+        return SmbFileWriter(UniffiWithHandle, value)
     }
 
-    override fun read(buf: ByteBuffer): UniSmbFileSystem {
+    override fun read(buf: ByteBuffer): SmbFileWriter {
         return lift(buf.getLong())
     }
 
-    override fun allocationSize(value: UniSmbFileSystem) = 8UL
+    override fun allocationSize(value: SmbFileWriter) = 8UL
 
-    override fun write(value: UniSmbFileSystem, buf: ByteBuffer) {
+    override fun write(value: SmbFileWriter, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -1871,28 +2478,92 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeUniSmbFileSystem: FfiConverterRustBuffer<UniSmbFileSystem?> {
-    override fun read(buf: ByteBuffer): UniSmbFileSystem? {
+public object FfiConverterOptionalTypeSmbFileReader: FfiConverterRustBuffer<SmbFileReader?> {
+    override fun read(buf: ByteBuffer): SmbFileReader? {
         if (buf.get().toInt() == 0) {
             return null
         }
-        return FfiConverterTypeUniSmbFileSystem.read(buf)
+        return FfiConverterTypeSmbFileReader.read(buf)
     }
 
-    override fun allocationSize(value: UniSmbFileSystem?): ULong {
+    override fun allocationSize(value: SmbFileReader?): ULong {
         if (value == null) {
             return 1UL
         } else {
-            return 1UL + FfiConverterTypeUniSmbFileSystem.allocationSize(value)
+            return 1UL + FfiConverterTypeSmbFileReader.allocationSize(value)
         }
     }
 
-    override fun write(value: UniSmbFileSystem?, buf: ByteBuffer) {
+    override fun write(value: SmbFileReader?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
             buf.put(1)
-            FfiConverterTypeUniSmbFileSystem.write(value, buf)
+            FfiConverterTypeSmbFileReader.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeSmbFileSystem: FfiConverterRustBuffer<SmbFileSystem?> {
+    override fun read(buf: ByteBuffer): SmbFileSystem? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeSmbFileSystem.read(buf)
+    }
+
+    override fun allocationSize(value: SmbFileSystem?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeSmbFileSystem.allocationSize(value)
+        }
+    }
+
+    override fun write(value: SmbFileSystem?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeSmbFileSystem.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeSmbFileWriter: FfiConverterRustBuffer<SmbFileWriter?> {
+    override fun read(buf: ByteBuffer): SmbFileWriter? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeSmbFileWriter.read(buf)
+    }
+
+    override fun allocationSize(value: SmbFileWriter?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeSmbFileWriter.allocationSize(value)
+        }
+    }
+
+    override fun write(value: SmbFileWriter?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeSmbFileWriter.write(value, buf)
         }
     }
 }
@@ -2025,7 +2696,7 @@ public object FfiConverterSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<S
 
 
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-     suspend fun `connectSamba`(`config`: SambaServerConfig) : UniSmbFileSystem? {
+     suspend fun `connectSamba`(`config`: SambaServerConfig) : SmbFileSystem? {
         return uniffiRustCallAsync(
         UniffiLib.uniffi_samba_cargo_fn_func_connect_samba(
         FfiConverterTypeSambaServerConfig.lower(`config`),),
@@ -2033,7 +2704,7 @@ public object FfiConverterSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<S
         { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
         // lift function
-        { FfiConverterOptionalTypeUniSmbFileSystem.lift(it) },
+        { FfiConverterOptionalTypeSmbFileSystem.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )

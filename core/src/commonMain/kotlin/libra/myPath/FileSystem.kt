@@ -2,8 +2,6 @@ package libra.myPath
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -19,7 +17,9 @@ import kotlinx.io.RawSink
 import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.files.FileMetadata
+import kotlinx.serialization.Polymorphic
 
+@Polymorphic
 interface FileSystem {
     suspend infix fun name(path: Path): String?
     suspend infix fun exists(path: Path): Boolean
@@ -33,10 +33,10 @@ interface FileSystem {
     suspend fun sink(path: Path, append: Boolean = false): RawSink
 
     suspend fun copyFrom(path: Path, from: FileEntry): Boolean = withContext(Dispatchers.IO) {
-        check(isTreePath(path) != true) { " < $path, $from" }
-        require(from.exists()) { " < $path, $from" }
+        check(isTreePath(path) != true) { "$path is a tree path. < ${from.path}" }
+        require(from.exists()) { "$from does not exist. < ${from.path}" }
 
-        from.source().buffered().use { it.transferTo(sink(path)) }
+        sink(path).buffered().use { it.transferFrom(from.source()) }
         metadata(path)?.size == from.metadata()?.size
     }
 
@@ -45,52 +45,40 @@ interface FileSystem {
     }
 
     // directory
-    suspend fun findFile(path: Path, name: String): FileEntry?
-    suspend fun createFile(path: Path, name: String): FileEntry?
+    suspend fun file(path: Path, name: String): FileEntry?
+    suspend fun createFile(path: Path, name: String): FileEntry
 
-    suspend fun findDirectory(path: Path, name: String): DirectoryEntry?
-    suspend fun createDirectory(path: Path, name: String): DirectoryEntry?
+    suspend fun directory(path: Path, name: String): DirectoryEntry?
+    suspend fun createDirectory(path: Path, name: String): DirectoryEntry
 
 
     infix fun list(path: Path): Flow<Entry>
 
-    data class ListRecursivelyReturn(
-        val cwd: DirectoryEntry,
-        val dirs: List<DirectoryEntry>,
-        val files: List<FileEntry>,
-        val steps: List<String>
-    )
-
     fun listRecursively(
-        path: Path, maxDepth: Int = 100
-    ): Flow<ListRecursivelyReturn> = flow {
-        check(metadata(path)?.isDirectory == true) { " < $path, $maxDepth" }
-        check(isTreePath(path) == true) { " < $path, $maxDepth" }
+        path: Path,
+        maxDepth: Int = 100
+    ): Flow<Pair<Entry, List<String>>> = flow {
+        check(isTreePath(path) == true) { "$path is not a tree path. < $maxDepth" }
 
+        val visited = mutableSetOf<Path>()
         val queue = ArrayDeque<Pair<DirectoryEntry, List<String>>>()
-        queue.add(Pair(DirectoryEntry(path, this@FileSystem), emptyList()))
+
+        queue.add(DirectoryEntry(path, this@FileSystem) to emptyList())
+        visited.add(path)
 
         while (queue.isNotEmpty()) {
             currentCoroutineContext().ensureActive()
 
             val (cwd, steps) = queue.removeFirst()
-            val dirs = mutableListOf<DirectoryEntry>()
-            val files = mutableListOf<FileEntry>()
 
-            list(cwd.path).collect {
-                when (it) {
-                    is FileEntry -> files.add(it)
-                    is DirectoryEntry -> dirs.add(it)
-                }
-            }
+            list(cwd.path).collect { entry ->
+                emit(entry to steps)
 
-            emit(ListRecursivelyReturn(cwd, dirs, files, steps))
-
-            if (steps.size < maxDepth) {
-                dirs.forEach {
-                    val nextSteps = steps + (name(it.path)
-                        ?: throw IllegalStateException(" < $path, $maxDepth, $it"))
-                    queue.add(Pair(it, nextSteps))
+                if (entry is DirectoryEntry && steps.size < maxDepth) {
+                    if (visited.add(entry.path)) {
+                        val dirName = name(entry.path) ?: entry.path.path.substringAfterLast('/')
+                        queue.add(entry to (steps + dirName))
+                    }
                 }
             }
         }
@@ -98,23 +86,23 @@ interface FileSystem {
 
 
     suspend infix fun deleteRecursively(path: Path): Boolean = withContext(Dispatchers.IO) {
-        check(metadata(path)?.isDirectory == true) { " < $path" }
-        check(isTreePath(path) == true) { " < $path" }
+        check(isTreePath(path) == true) { "$path is not a tree path." }
 
         val dirDepths: MutableList<Pair<Path, Int>> = mutableListOf()
         val mutex = Mutex()
 
-        val result = coroutineScope {
-            listRecursively(path).map { (cwd, _, files, steps) ->
-                mutex.withLock {
-                    dirDepths.add(Pair(cwd.path, steps.size))
-                }
+        dirDepths.add(path to 0)
 
-                files.map {
-                    async { delete(it.path) }
-                }.awaitAll().all { it }
-            }.all { it }
-        }
+        val result = listRecursively(path).map { (entry, steps) ->
+            when (entry) {
+                is FileEntry -> entry.delete()
+                is DirectoryEntry -> {
+                    entry.resolveParent()
+                        ?.also { mutex.withLock { dirDepths.add(it to steps.size) } }
+                        .let { it != null }
+                }
+            }
+        }.all { it }
 
         if (!result) return@withContext false
 
@@ -124,46 +112,49 @@ interface FileSystem {
     }
 
 
-    suspend fun copyFrom(path: Path, from: DirectoryEntry): Boolean = withContext(Dispatchers.IO) {
-        check(metadata(path)?.isDirectory == true) { " < $path, $from" }
-        check(isTreePath(path) == true) { " < $path, $from" }
+    suspend fun copyFrom(path: Path, from: DirectoryEntry): Boolean =
+        withContext(Dispatchers.IO) {
+            check(isTreePath(path) == true) { "$path is not a tree path. < ${from.path}" }
 
-        val dirCache = mutableMapOf<List<String>, Path>()
-        dirCache[emptyList()] = path
+            val dirCache = mutableMapOf<List<String>, Path>()
+            dirCache[emptyList()] = path
 
-        coroutineScope {
-            from.listRecursively().map { (_, _, files, steps) ->
-                val wd = dirCache.getOrPut(steps) {
-                    val parentSteps = steps.dropLast(1)
-                    val parentPath = dirCache[parentSteps]
-                        ?: throw IllegalStateException(" < $path, $from, $steps")
-                    val currentDirName = steps.last()
+            coroutineScope {
+                from.listRecursively().map { (entry, steps) ->
+                    val cwd = dirCache.getOrPut(steps) {
+                        val parentSteps = steps.dropLast(1)
+                        val parentPath = dirCache[parentSteps]
+                            ?: error("$parentSteps not in dirCache. < $path, $from, $steps")
+                        val currentDirName = steps.last()
 
-                    findOrCreateDirectory(parentPath, currentDirName)?.path
-                        ?: throw IllegalStateException(" < $path, $from, $parentPath, $currentDirName, $steps")
-                }
-
-                files.map {
-                    async {
-                        val file = findOrCreateFile(
-                            wd, it.name() ?: throw IllegalStateException(" < $path, $from, $it")
-                        ) ?: return@async false
-
-                        copyFrom(file.path, it)
+                        findOrCreateDirectory(parentPath, currentDirName).path
                     }
-                }.awaitAll().all { it }
-            }.all { it }
-        }
-    }
 
-    suspend fun moveFrom(path: Path, from: DirectoryEntry): Boolean = withContext(Dispatchers.IO) {
-        runCatching { copyFrom(path, from) }.onSuccess { if (it) from.deleteRecursively() }
-            .getOrThrow()
-    }
+                    if (entry is FileEntry) {
+                        val file = findOrCreateFile(
+                            cwd, entry.name() ?: error("$entry.name is null. < $path, $from")
+                        )
+                        copyFrom(file.path, entry)
+                    } else true
+                }.all { it }
+            }
+        }
+
+    suspend fun moveFrom(path: Path, from: DirectoryEntry): Boolean =
+        withContext(Dispatchers.IO) {
+            runCatching { copyFrom(path, from) }.onSuccess { if (it) from.deleteRecursively() }
+                .getOrThrow()
+        }
 }
 
-suspend fun FileSystem.findOrCreateFile(path: Path, name: String): FileEntry? =
-    findFile(path, name) ?: createFile(path, name)
+suspend fun FileSystem.findOrCreateFile(path: Path, name: String): FileEntry =
+    file(path, name).let {
+        if (it == null || !it.exists()) createFile(path, name)
+        else it
+    }
 
-suspend fun FileSystem.findOrCreateDirectory(path: Path, name: String): DirectoryEntry? =
-    findDirectory(path, name) ?: createDirectory(path, name)
+suspend fun FileSystem.findOrCreateDirectory(path: Path, name: String): DirectoryEntry =
+    directory(path, name).let {
+        if (it == null || !it.exists()) createDirectory(path, name)
+        else it
+    }

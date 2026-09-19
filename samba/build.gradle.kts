@@ -19,7 +19,7 @@ kotlin {
     jvm()
 
     android {
-        namespace = "libra.myPath.samba"
+        namespace = "libra.myPath.smb"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -85,7 +85,7 @@ val cargoBuild = tasks.register<Exec>("cargoBuild") {
 //             cargo build --release --target aarch64-apple-ios-sim,
             "cargo ndk -t x86_64 -t arm64-v8a -o src/androidMain/jniLibs build --release",
 //            "cbindgen --crate $library --output $outDir/$library.h"
-            "cargo run --bin uniffi-bindgen generate --library $outDir/$library.$ext --language kotlin --out-dir $outDir --no-format"
+            "cargo run --bin uniffi-bindgen generate --library $outDir/$library.$ext --language kotlin --out-dir $outDir"
         ).joinToString(" && ")
     )
 }
@@ -96,30 +96,37 @@ tasks.register<Copy>("uniFFIBindInstall") {
     description = "uniFFIBindInstall"
     destinationDir = projectDir
 
+
+    val release = "target/release"
+    val resources = "src/jvmMain/resources"
+    val uniffi = "src/commonMain/kotlin/libra/myPath/smb/uniffi"
+
+
     from("target/aarch64-linux-android/release") {
         include("*.so")
-        into("src/jvmMain/resources/linux-aarch64")
+        into("$resources/linux-aarch64")
     }
 
     from("target/x86_64-linux-android/release") {
         include("*.so")
-        into("src/jvmMain/resources/linux-x86-64")
+        into("$resources/linux-x86-64")
     }
 
-    from("target/release") {
+    from(release) {
         include("*.dll")
-        into("src/jvmMain/resources/win32-x86-64")
+        into("$resources/win32-x86-64")
     }
 
-    from("target/release/uniffi") {
+    from("$release/uniffi") {
         include("**/*.kt")
-        into("src/androidMain/kotlin")
+        into(uniffi)
     }
 
-    from("target/release/uniffi") {
-        include("**/*.kt")
-        into("src/jvmMain/kotlin")
-    }
+//    from("target/release/uniffi") {
+//        include("**/*.kt")
+//        into("src/androidMain/kotlin")
+//        into("src/jvmMain/kotlin")
+//    }
 
 //    from("target/release/samba_cargo.h") {
 //        into("src/nativeInterop/cinterop")

@@ -9,11 +9,11 @@ data class DirectoryEntry(
     override val fileSystem: FileSystem,
     override val parent: Path? = null
 ) : Entry {
-    suspend infix fun findFile(name: String) = fileSystem.findFile(path, name)
+    suspend infix fun file(name: String) = fileSystem.file(path, name)
     suspend infix fun createFile(name: String) = fileSystem.createFile(path, name)
     suspend infix fun findOrCreateFile(name: String) = fileSystem.findOrCreateFile(path, name)
 
-    suspend infix fun findDirectory(name: String) = fileSystem.findDirectory(path, name)
+    suspend infix fun directory(name: String) = fileSystem.directory(path, name)
     suspend infix fun createDirectory(name: String) = fileSystem.createDirectory(path, name)
     suspend infix fun findOrCreateDirectory(name: String) =
         fileSystem.findOrCreateDirectory(path, name)

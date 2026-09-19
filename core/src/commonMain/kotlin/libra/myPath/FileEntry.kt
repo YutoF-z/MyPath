@@ -3,7 +3,7 @@ package libra.myPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import kotlinx.io.Source
+import kotlinx.io.RawSource
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
 import kotlinx.io.readString
@@ -51,11 +51,12 @@ data class FileEntry(
 
 
     suspend fun write(
-        source: Source,
+        source: RawSource,
         append: Boolean = false
     ) {
         withContext(Dispatchers.IO) {
-            sink(append).use { source.transferTo(it) > 0 }
+            sink(append).buffered()
+                .use { it.transferFrom(source) > 0 }
         }
     }
 
@@ -75,7 +76,6 @@ data class FileEntry(
         }
     }
 }
-
 
 suspend inline infix fun <reified T> FileEntry.read(format: BinaryFormat): T =
     read(serializer<T>(), format)

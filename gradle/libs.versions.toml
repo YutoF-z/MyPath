@@ -1,12 +1,12 @@
 [versions]
-project = "0.0.1"
+project = "0.1.0"
 jvm = "25"
 
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-core
 kotlinx-serialization = "1.11.0"
 
 kotlin = "2.4.20"
-android-minSdk = "24"
+android-minSdk = "33"
 android-compileSdk = "37"
 
 [libraries]
@@ -43,7 +43,7 @@ serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "2
 
 uniffi = { id = "ch.ubique.uniffi.plugin", version = "1.2.1" }
 
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version = "9.4.0" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version = "9.4.1" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }
 

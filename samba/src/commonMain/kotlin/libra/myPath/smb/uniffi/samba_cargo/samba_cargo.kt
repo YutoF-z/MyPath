@@ -17,27 +17,20 @@ package uniffi.samba_cargo
 // compile the Rust component. The easiest way to ensure this is to bundle the Kotlin
 // helpers directly inline like we're doing here.
 
-import com.sun.jna.Library
-import com.sun.jna.IntegerType
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
-import com.sun.jna.Callback
-import com.sun.jna.ptr.*
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.Serializable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.resume
-import kotlinx.coroutines.CancellableContinuation
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -50,14 +43,19 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 open class RustBuffer : Structure() {
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
     // When dealing with these fields, make sure to call `toULong()`.
-    @JvmField var capacity: Long = 0
-    @JvmField var len: Long = 0
-    @JvmField var data: Pointer? = null
+    @JvmField
+    var capacity: Long = 0
 
-    class ByValue: RustBuffer(), Structure.ByValue
-    class ByReference: RustBuffer(), Structure.ByReference
+    @JvmField
+    var len: Long = 0
 
-   internal fun setValue(other: RustBuffer) {
+    @JvmField
+    var data: Pointer? = null
+
+    class ByValue : RustBuffer(), Structure.ByValue
+    class ByReference : RustBuffer(), Structure.ByReference
+
+    internal fun setValue(other: RustBuffer) {
         capacity = other.capacity
         len = other.len
         data = other.data
@@ -68,9 +66,9 @@ open class RustBuffer : Structure() {
             // Note: need to convert the size to a `Long` value to make this work with JVM.
             UniffiLib.ffi_samba_cargo_rustbuffer_alloc(size.toLong(), status)
         }.also {
-            if(it.data == null) {
-               throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
-           }
+            if (it.data == null) {
+                throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
+            }
         }
 
         internal fun create(capacity: ULong, len: ULong, data: Pointer?): RustBuffer.ByValue {
@@ -101,8 +99,11 @@ open class RustBuffer : Structure() {
 
 @Structure.FieldOrder("len", "data")
 internal open class ForeignBytes : Structure() {
-    @JvmField var len: Int = 0
-    @JvmField var data: Pointer? = null
+    @JvmField
+    var len: Int = 0
+
+    @JvmField
+    var data: Pointer? = null
 
     class ByValue : ForeignBytes(), Structure.ByValue
 }
@@ -143,6 +144,7 @@ internal object FfiConverterByRefBytes : FfiConverter<java.nio.ByteBuffer, Forei
     override fun allocationSize(value: java.nio.ByteBuffer): ULong =
         error("ByRef bytes have no RustBuffer allocation size: zero-copy &[u8] is only supported in argument position, not nested in records/options/etc.")
 }
+
 /**
  * The FfiConverter interface handles converter types to and from the FFI
  *
@@ -202,11 +204,11 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun liftFromRustBuffer(rbuf: RustBuffer.ByValue): KotlinType {
         val byteBuf = rbuf.asByteBuffer()!!
         try {
-           val item = read(byteBuf)
-           if (byteBuf.hasRemaining()) {
-               throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
-           }
-           return item
+            val item = read(byteBuf)
+            if (byteBuf.hasRemaining()) {
+                throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
+            }
+            return item
         } finally {
             RustBuffer.free(rbuf)
         }
@@ -218,7 +220,7 @@ public interface FfiConverter<KotlinType, FfiType> {
  *
  * @suppress
  */
-public interface FfiConverterRustBuffer<KotlinType>: FfiConverter<KotlinType, RustBuffer.ByValue> {
+public interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
     override fun lift(value: RustBuffer.ByValue) = liftFromRustBuffer(value)
     override fun lower(value: KotlinType) = lowerIntoRustBuffer(value)
 }
@@ -231,10 +233,13 @@ internal const val UNIFFI_CALL_UNEXPECTED_ERROR = 2.toByte()
 
 @Structure.FieldOrder("code", "error_buf")
 internal open class UniffiRustCallStatus : Structure() {
-    @JvmField var code: Byte = 0
-    @JvmField var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
+    @JvmField
+    var code: Byte = 0
 
-    class ByValue: UniffiRustCallStatus(), Structure.ByValue
+    @JvmField
+    var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
+
+    class ByValue : UniffiRustCallStatus(), Structure.ByValue
 
     fun isSuccess(): Boolean {
         return code == UNIFFI_CALL_SUCCESS
@@ -274,7 +279,10 @@ interface UniffiRustCallStatusErrorHandler<E> {
 // synchronize itself
 
 // Call a rust function that returns a Result<>.  Pass in the Error class companion that corresponds to the Err
-private inline fun <U, E: kotlin.Exception> uniffiRustCallWithError(errorHandler: UniffiRustCallStatusErrorHandler<E>, callback: (UniffiRustCallStatus) -> U): U {
+private inline fun <U, E : kotlin.Exception> uniffiRustCallWithError(
+    errorHandler: UniffiRustCallStatusErrorHandler<E>,
+    callback: (UniffiRustCallStatus) -> U
+): U {
     var status = UniffiRustCallStatus()
     val return_value = callback(status)
     uniffiCheckCallStatus(errorHandler, status)
@@ -282,7 +290,10 @@ private inline fun <U, E: kotlin.Exception> uniffiRustCallWithError(errorHandler
 }
 
 // Check UniffiRustCallStatus and throw an error if the call wasn't successful
-private fun<E: kotlin.Exception> uniffiCheckCallStatus(errorHandler: UniffiRustCallStatusErrorHandler<E>, status: UniffiRustCallStatus) {
+private fun <E : kotlin.Exception> uniffiCheckCallStatus(
+    errorHandler: UniffiRustCallStatusErrorHandler<E>,
+    status: UniffiRustCallStatus
+) {
     if (status.isSuccess()) {
         return
     } else if (status.isError()) {
@@ -306,7 +317,7 @@ private fun<E: kotlin.Exception> uniffiCheckCallStatus(errorHandler: UniffiRustC
  *
  * @suppress
  */
-object UniffiNullRustCallStatusErrorHandler: UniffiRustCallStatusErrorHandler<InternalException> {
+object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
     override fun lift(error_buf: RustBuffer.ByValue): InternalException {
         RustBuffer.free(error_buf)
         return InternalException("Unexpected CALL_ERROR")
@@ -318,21 +329,25 @@ private inline fun <U> uniffiRustCall(callback: (UniffiRustCallStatus) -> U): U 
     return uniffiRustCallWithError(UniffiNullRustCallStatusErrorHandler, callback)
 }
 
-internal inline fun<T> uniffiTraitInterfaceCall(
+internal inline fun <T> uniffiTraitInterfaceCall(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
 ) {
     try {
         writeReturn(makeCall())
-    } catch(e: kotlin.Exception) {
-        val err = try { e.stackTraceToString() } catch(_: Throwable) { "" }
+    } catch (e: kotlin.Exception) {
+        val err = try {
+            e.stackTraceToString()
+        } catch (_: Throwable) {
+            ""
+        }
         callStatus.code = UNIFFI_CALL_UNEXPECTED_ERROR
         callStatus.error_buf = FfiConverterString.lower(err)
     }
 }
 
-internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
+internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallWithError(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
@@ -340,18 +355,23 @@ internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
 ) {
     try {
         writeReturn(makeCall())
-    } catch(e: kotlin.Exception) {
+    } catch (e: kotlin.Exception) {
         if (e is E) {
             callStatus.code = UNIFFI_CALL_ERROR
             callStatus.error_buf = lowerError(e)
         } else {
-            val err = try { e.stackTraceToString() } catch(_: Throwable) { "" }
+            val err = try {
+                e.stackTraceToString()
+            } catch (_: Throwable) {
+                ""
+            }
             callStatus.code = UNIFFI_CALL_UNEXPECTED_ERROR
             callStatus.error_buf = FfiConverterString.lower(err)
         }
     }
 }
-// Initial value and increment amount for handles. 
+
+// Initial value and increment amount for handles.
 // These ensure that Kotlin-generated handles always have the lowest bit set
 private const val UNIFFI_HANDLEMAP_INITIAL = 1.toLong()
 private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
@@ -359,9 +379,10 @@ private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
 // Map handles to objects
 //
 // This is used pass an opaque 64-bit handle representing a foreign object to the Rust code.
-internal class UniffiHandleMap<T: Any> {
+internal class UniffiHandleMap<T : Any> {
     private val map = ConcurrentHashMap<Long, T>()
-    // Start 
+
+    // Start
     private val counter = java.util.concurrent.atomic.AtomicLong(UNIFFI_HANDLEMAP_INITIAL)
 
     val size: Int
@@ -376,7 +397,8 @@ internal class UniffiHandleMap<T: Any> {
 
     // Clone a handle, creating a new one
     fun clone(handle: Long): Long {
-        val obj = map.get(handle) ?: throw InternalException("UniffiHandleMap.clone: Invalid handle")
+        val obj =
+            map.get(handle) ?: throw InternalException("UniffiHandleMap.clone: Invalid handle")
         return insert(obj)
     }
 
@@ -404,18 +426,22 @@ private fun findLibraryName(componentName: String): String {
 
 // Define FFI callback types
 internal interface UniffiRustFutureContinuationCallback : com.sun.jna.Callback {
-    fun callback(`data`: Long,`pollResult`: Byte,)
+    fun callback(`data`: Long, `pollResult`: Byte)
 }
+
 internal interface UniffiForeignFutureDroppedCallback : com.sun.jna.Callback {
-    fun callback(`handle`: Long,)
+    fun callback(`handle`: Long)
 }
+
 internal interface UniffiCallbackInterfaceFree : com.sun.jna.Callback {
-    fun callback(`handle`: Long,)
+    fun callback(`handle`: Long)
 }
+
 internal interface UniffiCallbackInterfaceClone : com.sun.jna.Callback {
-    fun callback(`handle`: Long,)
-    : Long
+    fun callback(`handle`: Long)
+            : Long
 }
+
 @Structure.FieldOrder("handle", "free")
 internal open class UniffiForeignFutureDroppedCallbackStruct(
     @JvmField internal var `handle`: Long = 0.toLong(),
@@ -424,14 +450,15 @@ internal open class UniffiForeignFutureDroppedCallbackStruct(
     class UniffiByValue(
         `handle`: Long = 0.toLong(),
         `free`: UniffiForeignFutureDroppedCallback? = null,
-    ): UniffiForeignFutureDroppedCallbackStruct(`handle`,`free`,), Structure.ByValue
+    ) : UniffiForeignFutureDroppedCallbackStruct(`handle`, `free`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureDroppedCallbackStruct) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureDroppedCallbackStruct) {
         `handle` = other.`handle`
         `free` = other.`free`
     }
 
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -440,17 +467,19 @@ internal open class UniffiForeignFutureResultU8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultU8(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultU8(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultU8) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultU8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteU8 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU8.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultU8.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -459,17 +488,19 @@ internal open class UniffiForeignFutureResultI8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultI8(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultI8(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultI8) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultI8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteI8 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI8.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultI8.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -478,17 +509,19 @@ internal open class UniffiForeignFutureResultU16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultU16(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultU16(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultU16) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultU16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteU16 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU16.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultU16.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -497,17 +530,19 @@ internal open class UniffiForeignFutureResultI16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultI16(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultI16(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultI16) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultI16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteI16 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI16.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultI16.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -516,17 +551,19 @@ internal open class UniffiForeignFutureResultU32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultU32(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultU32(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultU32) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultU32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteU32 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU32.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultU32.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -535,17 +572,19 @@ internal open class UniffiForeignFutureResultI32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultI32(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultI32(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultI32) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultI32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteI32 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI32.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultI32.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -554,17 +593,19 @@ internal open class UniffiForeignFutureResultU64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultU64(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultU64(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultU64) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultU64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteU64 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU64.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultU64.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -573,17 +614,19 @@ internal open class UniffiForeignFutureResultI64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultI64(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultI64(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultI64) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultI64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteI64 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI64.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultI64.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultF32(
     @JvmField internal var `returnValue`: Float = 0.0f,
@@ -592,17 +635,19 @@ internal open class UniffiForeignFutureResultF32(
     class UniffiByValue(
         `returnValue`: Float = 0.0f,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultF32(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultF32(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultF32) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultF32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteF32 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultF32.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultF32.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultF64(
     @JvmField internal var `returnValue`: Double = 0.0,
@@ -611,17 +656,19 @@ internal open class UniffiForeignFutureResultF64(
     class UniffiByValue(
         `returnValue`: Double = 0.0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultF64(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultF64(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultF64) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultF64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteF64 : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultF64.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultF64.UniffiByValue)
 }
+
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultRustBuffer(
     @JvmField internal var `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
@@ -630,32 +677,38 @@ internal open class UniffiForeignFutureResultRustBuffer(
     class UniffiByValue(
         `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultRustBuffer(`returnValue`,`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultRustBuffer(`returnValue`, `callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultRustBuffer) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultRustBuffer) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteRustBuffer : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultRustBuffer.UniffiByValue,)
+    fun callback(
+        `callbackData`: Long,
+        `result`: UniffiForeignFutureResultRustBuffer.UniffiByValue,
+    )
 }
+
 @Structure.FieldOrder("callStatus")
 internal open class UniffiForeignFutureResultVoid(
     @JvmField internal var `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
 ) : Structure() {
     class UniffiByValue(
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ): UniffiForeignFutureResultVoid(`callStatus`,), Structure.ByValue
+    ) : UniffiForeignFutureResultVoid(`callStatus`), Structure.ByValue
 
-   internal fun uniffiSetValue(other: UniffiForeignFutureResultVoid) {
+    internal fun uniffiSetValue(other: UniffiForeignFutureResultVoid) {
         `callStatus` = other.`callStatus`
     }
 
 }
+
 internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
-    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultVoid.UniffiByValue,)
+    fun callback(`callbackData`: Long, `result`: UniffiForeignFutureResultVoid.UniffiByValue)
 }
 
 // A JNA Library to expose the extern-C FFI definitions.
@@ -676,194 +729,350 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 // We now use JNA's "direct mapping" - unclear if same considerations apply exactly.
 internal object IntegrityCheckingUniffiLib {
     init {
-        Native.register(IntegrityCheckingUniffiLib::class.java, findLibraryName(componentName = "samba_cargo"))
+        Native.register(
+            IntegrityCheckingUniffiLib::class.java,
+            findLibraryName(componentName = "samba_cargo")
+        )
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
+
     external fun uniffi_samba_cargo_checksum_func_connect_samba(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_smbfilereader_close(
+
+    external fun uniffi_samba_cargo_checksum_method_smbfilereader_finish(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilereader_read_at(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_create_directory(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_delete_directory(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_delete_file(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_list_directory(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_metadata(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_open_read(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilesystem_open_write(
     ): Int
-    external fun uniffi_samba_cargo_checksum_method_smbfilewriter_close(
+
+    external fun uniffi_samba_cargo_checksum_method_smbfilewriter_finish(
     ): Int
+
     external fun uniffi_samba_cargo_checksum_method_smbfilewriter_write_at(
     ): Int
+
     external fun ffi_samba_cargo_uniffi_contract_version(
     ): Int
 
-        
+
 }
 
 internal object UniffiLib {
-    
+
     // The Cleaner for the whole library
     internal val CLEANER: UniffiCleaner by lazy {
         UniffiCleaner.create()
     }
-    
+
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "samba_cargo"))
-        
+
     }
-    external fun uniffi_samba_cargo_fn_clone_smbfilereader(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+
+    external fun uniffi_samba_cargo_fn_clone_smbfilereader(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Long
-    external fun uniffi_samba_cargo_fn_free_smbfilereader(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_samba_cargo_fn_method_smbfilereader_close(`ptr`: Long,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilereader_read_at(`ptr`: Long,`offset`: Long,`len`: Long,
-    ): Long
-    external fun uniffi_samba_cargo_fn_clone_smbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_samba_cargo_fn_free_smbfilesystem(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_metadata(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_read(`ptr`: Long,`path`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_write(`ptr`: Long,`path`: RustBuffer.ByValue,`append`: Byte,
-    ): Long
-    external fun uniffi_samba_cargo_fn_clone_smbfilewriter(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_samba_cargo_fn_free_smbfilewriter(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_samba_cargo_fn_method_smbfilewriter_close(`ptr`: Long,
-    ): Long
-    external fun uniffi_samba_cargo_fn_method_smbfilewriter_write_at(`ptr`: Long,`data`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_samba_cargo_fn_func_connect_samba(`config`: RustBuffer.ByValue,
-    ): Long
-    external fun ffi_samba_cargo_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_samba_cargo_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_samba_cargo_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun ffi_samba_cargo_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_samba_cargo_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_u8(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_u8(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_samba_cargo_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_i8(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_i8(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Byte
-    external fun ffi_samba_cargo_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_u16(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_u16(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_samba_cargo_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_i16(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_i16(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Short
-    external fun ffi_samba_cargo_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_u32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_u32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_samba_cargo_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_i32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_i32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_samba_cargo_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_u64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_u64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun ffi_samba_cargo_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_i64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_i64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun ffi_samba_cargo_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_f32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_f32(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Float
-    external fun ffi_samba_cargo_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_f64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_f64(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Double
-    external fun ffi_samba_cargo_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_rust_buffer(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_rust_buffer(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_samba_cargo_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_cancel_void(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_free_void(`handle`: Long,
-    ): Unit
-    external fun ffi_samba_cargo_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+
+    external fun uniffi_samba_cargo_fn_free_smbfilereader(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-        
+    external fun uniffi_samba_cargo_fn_method_smbfilereader_finish(
+        `ptr`: Long,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilereader_read_at(
+        `ptr`: Long, `offset`: Long, `len`: Long,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_clone_smbfilesystem(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_free_smbfilesystem(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_metadata(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_read(
+        `ptr`: Long, `path`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilesystem_open_write(
+        `ptr`: Long, `path`: RustBuffer.ByValue, `append`: Byte,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_clone_smbfilewriter(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_free_smbfilewriter(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    external fun uniffi_samba_cargo_fn_method_smbfilewriter_finish(
+        `ptr`: Long,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_method_smbfilewriter_write_at(
+        `ptr`: Long, `data`: RustBuffer.ByValue,
+    ): Long
+
+    external fun uniffi_samba_cargo_fn_func_connect_samba(
+        `config`: RustBuffer.ByValue,
+    ): Long
+
+    external fun ffi_samba_cargo_rustbuffer_alloc(
+        `size`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    external fun ffi_samba_cargo_rustbuffer_from_bytes(
+        `bytes`: ForeignBytes.ByValue, uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    external fun ffi_samba_cargo_rustbuffer_free(
+        `buf`: RustBuffer.ByValue, uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    external fun ffi_samba_cargo_rustbuffer_reserve(
+        `buf`: RustBuffer.ByValue, `additional`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    external fun ffi_samba_cargo_rust_future_poll_u8(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_u8(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_u8(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_u8(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Int
+
+    external fun ffi_samba_cargo_rust_future_poll_i8(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_i8(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_i8(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_i8(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun ffi_samba_cargo_rust_future_poll_u16(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_u16(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_u16(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_u16(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Int
+
+    external fun ffi_samba_cargo_rust_future_poll_i16(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_i16(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_i16(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_i16(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Short
+
+    external fun ffi_samba_cargo_rust_future_poll_u32(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_u32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_u32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_u32(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Int
+
+    external fun ffi_samba_cargo_rust_future_poll_i32(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_i32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_i32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_i32(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Int
+
+    external fun ffi_samba_cargo_rust_future_poll_u64(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_u64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_u64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_u64(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
+    external fun ffi_samba_cargo_rust_future_poll_i64(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_i64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_i64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_i64(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
+    external fun ffi_samba_cargo_rust_future_poll_f32(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_f32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_f32(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_f32(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Float
+
+    external fun ffi_samba_cargo_rust_future_poll_f64(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_f64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_f64(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_f64(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Double
+
+    external fun ffi_samba_cargo_rust_future_poll_rust_buffer(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_rust_buffer(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_rust_buffer(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_rust_buffer(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    external fun ffi_samba_cargo_rust_future_poll_void(
+        `handle`: Long, `callback`: UniffiRustFutureContinuationCallback, `callbackData`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_cancel_void(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_free_void(
+        `handle`: Long,
+    ): Unit
+
+    external fun ffi_samba_cargo_rust_future_complete_void(
+        `handle`: Long, uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -875,12 +1084,13 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
 }
+
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_samba_cargo_checksum_func_connect_samba() and 0xFFFF) != 47307) {
+    if ((lib.uniffi_samba_cargo_checksum_func_connect_samba() and 0xFFFF) != 21298) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_smbfilereader_close() and 0xFFFF) != 63292) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilereader_finish() and 0xFFFF) != 39394) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_samba_cargo_checksum_method_smbfilereader_read_at() and 0xFFFF) != 26798) {
@@ -907,7 +1117,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_samba_cargo_checksum_method_smbfilesystem_open_write() and 0xFFFF) != 62446) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_samba_cargo_checksum_method_smbfilewriter_close() and 0xFFFF) != 13762) {
+    if ((lib.uniffi_samba_cargo_checksum_method_smbfilewriter_finish() and 0xFFFF) != 19765) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_samba_cargo_checksum_method_smbfilewriter_write_at() and 0xFFFF) != 36620) {
@@ -918,6 +1128,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
 /**
  * @suppress
  */
+@Suppress("UnusedExpression")
 public fun uniffiEnsureInitialized() {
     IntegrityCheckingUniffiLib
     // UniffiLib() initialized as objects are used, but we still need to explicitly
@@ -934,13 +1145,13 @@ internal const val UNIFFI_RUST_FUTURE_POLL_WAKE = 1.toByte()
 internal val uniffiContinuationHandleMap = UniffiHandleMap<CancellableContinuation<Byte>>()
 
 // FFI type for Rust future continuations
-internal object uniffiRustFutureContinuationCallbackImpl: UniffiRustFutureContinuationCallback {
+internal object uniffiRustFutureContinuationCallbackImpl : UniffiRustFutureContinuationCallback {
     override fun callback(data: Long, pollResult: Byte) {
         uniffiContinuationHandleMap.remove(data).resume(pollResult)
     }
 }
 
-internal suspend fun<T, F, E: kotlin.Exception> uniffiRustCallAsync(
+internal suspend fun <T, F, E : kotlin.Exception> uniffiRustCallAsync(
     rustFuture: Long,
     pollFunc: (Long, UniffiRustFutureContinuationCallback, Long) -> Unit,
     completeFunc: (Long, UniffiRustCallStatus) -> F,
@@ -980,6 +1191,7 @@ internal suspend fun<T, F, E: kotlin.Exception> uniffiRustCallAsync(
 // helper method to execute a block and destroy the object at the end.
 interface Disposable {
     fun destroy()
+
     companion object {
         fun destroy(vararg args: Any?) {
             for (arg in args) {
@@ -993,6 +1205,7 @@ interface Disposable {
                             }
                         }
                     }
+
                     is Map<*, *> -> {
                         for (element in arg.values) {
                             if (element is Disposable) {
@@ -1000,6 +1213,7 @@ interface Disposable {
                             }
                         }
                     }
+
                     is Iterable<*> -> {
                         for (element in arg) {
                             if (element is Disposable) {
@@ -1045,6 +1259,7 @@ object UniffiWithHandle
  * @suppress
  * */
 object NoHandle
+
 /**
  * The cleaner interface for Object finalization code to run.
  * This is the entry point to any implementation that we're using.
@@ -1113,7 +1328,7 @@ private class JavaLangRefCleanable(
 /**
  * @suppress
  */
-public object FfiConverterUShort: FfiConverter<UShort, Short> {
+public object FfiConverterUShort : FfiConverter<UShort, Short> {
     override fun lift(value: Short): UShort {
         return value.toUShort()
     }
@@ -1140,7 +1355,7 @@ public object FfiConverterUShort: FfiConverter<UShort, Short> {
 /**
  * @suppress
  */
-public object FfiConverterULong: FfiConverter<ULong, Long> {
+public object FfiConverterULong : FfiConverter<ULong, Long> {
     override fun lift(value: Long): ULong {
         return value.toULong()
     }
@@ -1163,7 +1378,7 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
-public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
+public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
     }
@@ -1186,7 +1401,7 @@ public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
 /**
  * @suppress
  */
-public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
+public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
     // store our length and avoid writing it out to the buffer.
@@ -1243,16 +1458,18 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 /**
  * @suppress
  */
-public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
+public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
     override fun read(buf: ByteBuffer): ByteArray {
         val len = buf.getInt()
         val byteArr = ByteArray(len)
         buf.get(byteArr)
         return byteArr
     }
+
     override fun allocationSize(value: ByteArray): ULong {
         return 4UL + value.size.toULong()
     }
+
     override fun write(value: ByteArray, buf: ByteBuffer) {
         buf.putInt(value.size)
         buf.put(value)
@@ -1356,21 +1573,20 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 
 
 public interface SmbFileReaderInterface {
-    
-    suspend fun `close`(): kotlin.Boolean
-    
+
+    suspend fun `finish`(): kotlin.Boolean
+
     suspend fun `readAt`(`offset`: kotlin.ULong, `len`: kotlin.ULong): kotlin.ByteArray?
-    
+
     companion object
 }
 
-open class SmbFileReader: Disposable, AutoCloseable, SmbFileReaderInterface
-{
+open class SmbFileReader : Disposable, AutoCloseable, SmbFileReaderInterface {
 
     @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
+            /**
+             * @suppress
+             */
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -1427,7 +1643,7 @@ open class SmbFileReader: Disposable, AutoCloseable, SmbFileReaderInterface
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -1465,67 +1681,83 @@ open class SmbFileReader: Disposable, AutoCloseable, SmbFileReaderInterface
         }
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `close`() : kotlin.Boolean {
+    override suspend fun `finish`(): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_close(
-                uniffiHandle,
-                
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_finish(
+                    uniffiHandle,
+
+                    )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readAt`(`offset`: kotlin.ULong, `len`: kotlin.ULong) : kotlin.ByteArray? {
+    override suspend fun `readAt`(`offset`: kotlin.ULong, `len`: kotlin.ULong): kotlin.ByteArray? {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_read_at(
-                uniffiHandle,
-                
-        FfiConverterULong.lower(`offset`),
-        FfiConverterULong.lower(`len`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalByteArray.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilereader_read_at(
+                    uniffiHandle,
+
+                    FfiConverterULong.lower(`offset`),
+                    FfiConverterULong.lower(`len`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalByteArray.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
 
-    
-
-
-    
-    
     /**
      * @suppress
      */
     companion object
-    
+
 }
 
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSmbFileReader: FfiConverter<SmbFileReader, Long> {
+public object FfiConverterTypeSmbFileReader : FfiConverter<SmbFileReader, Long> {
     override fun lower(value: SmbFileReader): Long {
         return value.uniffiCloneHandle()
     }
@@ -1642,31 +1874,30 @@ public object FfiConverterTypeSmbFileReader: FfiConverter<SmbFileReader, Long> {
 
 
 public interface SmbFileSystemInterface {
-    
+
     suspend fun `createDirectory`(`path`: kotlin.String): kotlin.Boolean
-    
+
     suspend fun `deleteDirectory`(`path`: kotlin.String): kotlin.Boolean
-    
+
     suspend fun `deleteFile`(`path`: kotlin.String): kotlin.Boolean
-    
+
     suspend fun `listDirectory`(`path`: kotlin.String): List<SmbDirEntry>?
-    
+
     suspend fun `metadata`(`path`: kotlin.String): SmbMetadata?
-    
+
     suspend fun `openRead`(`path`: kotlin.String): SmbFileReader?
-    
+
     suspend fun `openWrite`(`path`: kotlin.String, `append`: kotlin.Boolean): SmbFileWriter?
-    
+
     companion object
 }
 
-open class SmbFileSystem: Disposable, AutoCloseable, SmbFileSystemInterface
-{
+open class SmbFileSystem : Disposable, AutoCloseable, SmbFileSystemInterface {
 
     @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
+            /**
+             * @suppress
+             */
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -1723,7 +1954,7 @@ open class SmbFileSystem: Disposable, AutoCloseable, SmbFileSystemInterface
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -1761,173 +1992,247 @@ open class SmbFileSystem: Disposable, AutoCloseable, SmbFileSystemInterface
         }
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createDirectory`(`path`: kotlin.String) : kotlin.Boolean {
+    override suspend fun `createDirectory`(`path`: kotlin.String): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_create_directory(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteDirectory`(`path`: kotlin.String) : kotlin.Boolean {
+    override suspend fun `deleteDirectory`(`path`: kotlin.String): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_directory(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteFile`(`path`: kotlin.String) : kotlin.Boolean {
+    override suspend fun `deleteFile`(`path`: kotlin.String): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_delete_file(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `listDirectory`(`path`: kotlin.String) : List<SmbDirEntry>? {
+    override suspend fun `listDirectory`(`path`: kotlin.String): List<SmbDirEntry>? {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalSequenceTypeSmbDirEntry.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_list_directory(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalSequenceTypeSmbDirEntry.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `metadata`(`path`: kotlin.String) : SmbMetadata? {
+    override suspend fun `metadata`(`path`: kotlin.String): SmbMetadata? {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_metadata(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeSmbMetadata.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_metadata(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeSmbMetadata.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `openRead`(`path`: kotlin.String) : SmbFileReader? {
+    override suspend fun `openRead`(`path`: kotlin.String): SmbFileReader? {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_read(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeSmbFileReader.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_read(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeSmbFileReader.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `openWrite`(`path`: kotlin.String, `append`: kotlin.Boolean) : SmbFileWriter? {
+    override suspend fun `openWrite`(
+        `path`: kotlin.String,
+        `append`: kotlin.Boolean
+    ): SmbFileWriter? {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_write(
-                uniffiHandle,
-                
-        FfiConverterString.lower(`path`),
-        FfiConverterBoolean.lower(`append`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeSmbFileWriter.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilesystem_open_write(
+                    uniffiHandle,
+
+                    FfiConverterString.lower(`path`),
+                    FfiConverterBoolean.lower(`append`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeSmbFileWriter.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
 
-    
-
-
-    
-    
     /**
      * @suppress
      */
     companion object
-    
+
 }
 
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSmbFileSystem: FfiConverter<SmbFileSystem, Long> {
+public object FfiConverterTypeSmbFileSystem : FfiConverter<SmbFileSystem, Long> {
     override fun lower(value: SmbFileSystem): Long {
         return value.uniffiCloneHandle()
     }
@@ -2044,21 +2349,20 @@ public object FfiConverterTypeSmbFileSystem: FfiConverter<SmbFileSystem, Long> {
 
 
 public interface SmbFileWriterInterface {
-    
-    suspend fun `close`(): kotlin.Boolean
-    
+
+    suspend fun `finish`(): kotlin.Boolean
+
     suspend fun `writeAt`(`data`: kotlin.ByteArray): kotlin.Boolean
-    
+
     companion object
 }
 
-open class SmbFileWriter: Disposable, AutoCloseable, SmbFileWriterInterface
-{
+open class SmbFileWriter : Disposable, AutoCloseable, SmbFileWriterInterface {
 
     @Suppress("UNUSED_PARAMETER")
-    /**
-     * @suppress
-     */
+            /**
+             * @suppress
+             */
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -2115,7 +2419,7 @@ open class SmbFileWriter: Disposable, AutoCloseable, SmbFileWriterInterface
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -2153,66 +2457,82 @@ open class SmbFileWriter: Disposable, AutoCloseable, SmbFileWriterInterface
         }
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `close`() : kotlin.Boolean {
+    override suspend fun `finish`(): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_close(
-                uniffiHandle,
-                
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_finish(
+                    uniffiHandle,
+
+                    )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `writeAt`(`data`: kotlin.ByteArray) : kotlin.Boolean {
+    override suspend fun `writeAt`(`data`: kotlin.ByteArray): kotlin.Boolean {
         return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_write_at(
-                uniffiHandle,
-                
-        FfiConverterByteArray.lower(`data`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_samba_cargo_fn_method_smbfilewriter_write_at(
+                    uniffiHandle,
+
+                    FfiConverterByteArray.lower(`data`),
+                )
+            },
+            { future, callback, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_poll_i8(
+                    future,
+                    callback,
+                    continuation
+                )
+            },
+            { future, continuation ->
+                UniffiLib.ffi_samba_cargo_rust_future_complete_i8(
+                    future,
+                    continuation
+                )
+            },
+            { future -> UniffiLib.ffi_samba_cargo_rust_future_free_i8(future) },
+            // lift function
+            { FfiConverterBoolean.lift(it) },
+            // Error FFI converter
+            UniffiNullRustCallStatusErrorHandler,
+        )
     }
 
-    
 
-    
-
-
-    
-    
     /**
      * @suppress
      */
     companion object
-    
+
 }
 
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSmbFileWriter: FfiConverter<SmbFileWriter, Long> {
+public object FfiConverterTypeSmbFileWriter : FfiConverter<SmbFileWriter, Long> {
     override fun lower(value: SmbFileWriter): Long {
         return value.uniffiCloneHandle()
     }
@@ -2233,85 +2553,21 @@ public object FfiConverterTypeSmbFileWriter: FfiConverter<SmbFileWriter, Long> {
 }
 
 
-
-data class SambaServerConfig (
-    var `host`: List<kotlin.String>
-    , 
-    var `port`: kotlin.UShort?
-    , 
-    var `shareName`: kotlin.String
-    , 
-    var `username`: kotlin.String
-    , 
-    var `password`: kotlin.String
-    , 
-    var `domain`: kotlin.String?
-    
-){
-    
-
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeSambaServerConfig: FfiConverterRustBuffer<SambaServerConfig> {
-    override fun read(buf: ByteBuffer): SambaServerConfig {
-        return SambaServerConfig(
-            FfiConverterSequenceString.read(buf),
-            FfiConverterOptionalUShort.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterString.read(buf),
-            FfiConverterOptionalString.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: SambaServerConfig) = (
-            FfiConverterSequenceString.allocationSize(value.`host`) +
-            FfiConverterOptionalUShort.allocationSize(value.`port`) +
-            FfiConverterString.allocationSize(value.`shareName`) +
-            FfiConverterString.allocationSize(value.`username`) +
-            FfiConverterString.allocationSize(value.`password`) +
-            FfiConverterOptionalString.allocationSize(value.`domain`)
-    )
-
-    override fun write(value: SambaServerConfig, buf: ByteBuffer) {
-            FfiConverterSequenceString.write(value.`host`, buf)
-            FfiConverterOptionalUShort.write(value.`port`, buf)
-            FfiConverterString.write(value.`shareName`, buf)
-            FfiConverterString.write(value.`username`, buf)
-            FfiConverterString.write(value.`password`, buf)
-            FfiConverterOptionalString.write(value.`domain`, buf)
-    }
-}
-
-
-
-data class SmbDirEntry (
-    var `name`: kotlin.String
-    , 
-    var `isDirectory`: kotlin.Boolean
-    , 
+data class SmbDirEntry(
+    var `name`: kotlin.String,
+    var `isDirectory`: kotlin.Boolean,
     var `size`: kotlin.ULong
-    
-){
-    
 
-    
+) {
 
-    
+
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSmbDirEntry: FfiConverterRustBuffer<SmbDirEntry> {
+public object FfiConverterTypeSmbDirEntry : FfiConverterRustBuffer<SmbDirEntry> {
     override fun read(buf: ByteBuffer): SmbDirEntry {
         return SmbDirEntry(
             FfiConverterString.read(buf),
@@ -2322,39 +2578,33 @@ public object FfiConverterTypeSmbDirEntry: FfiConverterRustBuffer<SmbDirEntry> {
 
     override fun allocationSize(value: SmbDirEntry) = (
             FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterBoolean.allocationSize(value.`isDirectory`) +
-            FfiConverterULong.allocationSize(value.`size`)
-    )
+                    FfiConverterBoolean.allocationSize(value.`isDirectory`) +
+                    FfiConverterULong.allocationSize(value.`size`)
+            )
 
     override fun write(value: SmbDirEntry, buf: ByteBuffer) {
-            FfiConverterString.write(value.`name`, buf)
-            FfiConverterBoolean.write(value.`isDirectory`, buf)
-            FfiConverterULong.write(value.`size`, buf)
+        FfiConverterString.write(value.`name`, buf)
+        FfiConverterBoolean.write(value.`isDirectory`, buf)
+        FfiConverterULong.write(value.`size`, buf)
     }
 }
 
 
-
-data class SmbMetadata (
-    var `isDirectory`: kotlin.Boolean
-    , 
-    var `isFile`: kotlin.Boolean
-    , 
+data class SmbMetadata(
+    var `isDirectory`: kotlin.Boolean,
+    var `isFile`: kotlin.Boolean,
     var `size`: kotlin.ULong
-    
-){
-    
 
-    
+) {
 
-    
+
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSmbMetadata: FfiConverterRustBuffer<SmbMetadata> {
+public object FfiConverterTypeSmbMetadata : FfiConverterRustBuffer<SmbMetadata> {
     override fun read(buf: ByteBuffer): SmbMetadata {
         return SmbMetadata(
             FfiConverterBoolean.read(buf),
@@ -2365,24 +2615,72 @@ public object FfiConverterTypeSmbMetadata: FfiConverterRustBuffer<SmbMetadata> {
 
     override fun allocationSize(value: SmbMetadata) = (
             FfiConverterBoolean.allocationSize(value.`isDirectory`) +
-            FfiConverterBoolean.allocationSize(value.`isFile`) +
-            FfiConverterULong.allocationSize(value.`size`)
-    )
+                    FfiConverterBoolean.allocationSize(value.`isFile`) +
+                    FfiConverterULong.allocationSize(value.`size`)
+            )
 
     override fun write(value: SmbMetadata, buf: ByteBuffer) {
-            FfiConverterBoolean.write(value.`isDirectory`, buf)
-            FfiConverterBoolean.write(value.`isFile`, buf)
-            FfiConverterULong.write(value.`size`, buf)
+        FfiConverterBoolean.write(value.`isDirectory`, buf)
+        FfiConverterBoolean.write(value.`isFile`, buf)
+        FfiConverterULong.write(value.`size`, buf)
     }
 }
 
 
+@Serializable
+data class SmbServerConfig(
+    var `host`: List<kotlin.String>,
+    var `port`: kotlin.UShort?,
+    var `shareName`: kotlin.String,
+    var `username`: kotlin.String,
+    var `password`: kotlin.String,
+    var `domain`: kotlin.String?
+
+) {
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSmbServerConfig : FfiConverterRustBuffer<SmbServerConfig> {
+    override fun read(buf: ByteBuffer): SmbServerConfig {
+        return SmbServerConfig(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalUShort.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SmbServerConfig) = (
+            FfiConverterSequenceString.allocationSize(value.`host`) +
+                    FfiConverterOptionalUShort.allocationSize(value.`port`) +
+                    FfiConverterString.allocationSize(value.`shareName`) +
+                    FfiConverterString.allocationSize(value.`username`) +
+                    FfiConverterString.allocationSize(value.`password`) +
+                    FfiConverterOptionalString.allocationSize(value.`domain`)
+            )
+
+    override fun write(value: SmbServerConfig, buf: ByteBuffer) {
+        FfiConverterSequenceString.write(value.`host`, buf)
+        FfiConverterOptionalUShort.write(value.`port`, buf)
+        FfiConverterString.write(value.`shareName`, buf)
+        FfiConverterString.write(value.`username`, buf)
+        FfiConverterString.write(value.`password`, buf)
+        FfiConverterOptionalString.write(value.`domain`, buf)
+    }
+}
 
 
 /**
  * @suppress
  */
-public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?> {
+public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?> {
     override fun read(buf: ByteBuffer): kotlin.UShort? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2409,12 +2707,10 @@ public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?>
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
+public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2441,12 +2737,10 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteArray?> {
+public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
     override fun read(buf: ByteBuffer): kotlin.ByteArray? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2473,12 +2767,10 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeSmbFileReader: FfiConverterRustBuffer<SmbFileReader?> {
+public object FfiConverterOptionalTypeSmbFileReader : FfiConverterRustBuffer<SmbFileReader?> {
     override fun read(buf: ByteBuffer): SmbFileReader? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2505,12 +2797,10 @@ public object FfiConverterOptionalTypeSmbFileReader: FfiConverterRustBuffer<SmbF
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeSmbFileSystem: FfiConverterRustBuffer<SmbFileSystem?> {
+public object FfiConverterOptionalTypeSmbFileSystem : FfiConverterRustBuffer<SmbFileSystem?> {
     override fun read(buf: ByteBuffer): SmbFileSystem? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2537,12 +2827,10 @@ public object FfiConverterOptionalTypeSmbFileSystem: FfiConverterRustBuffer<SmbF
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeSmbFileWriter: FfiConverterRustBuffer<SmbFileWriter?> {
+public object FfiConverterOptionalTypeSmbFileWriter : FfiConverterRustBuffer<SmbFileWriter?> {
     override fun read(buf: ByteBuffer): SmbFileWriter? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2569,12 +2857,10 @@ public object FfiConverterOptionalTypeSmbFileWriter: FfiConverterRustBuffer<SmbF
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeSmbMetadata: FfiConverterRustBuffer<SmbMetadata?> {
+public object FfiConverterOptionalTypeSmbMetadata : FfiConverterRustBuffer<SmbMetadata?> {
     override fun read(buf: ByteBuffer): SmbMetadata? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2601,12 +2887,11 @@ public object FfiConverterOptionalTypeSmbMetadata: FfiConverterRustBuffer<SmbMet
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<SmbDirEntry>?> {
+public object FfiConverterOptionalSequenceTypeSmbDirEntry :
+    FfiConverterRustBuffer<List<SmbDirEntry>?> {
     override fun read(buf: ByteBuffer): List<SmbDirEntry>? {
         if (buf.get().toInt() == 0) {
             return null
@@ -2633,12 +2918,10 @@ public object FfiConverterOptionalSequenceTypeSmbDirEntry: FfiConverterRustBuffe
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
+public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
         return List<kotlin.String>(len) {
@@ -2661,12 +2944,10 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
 }
 
 
-
-
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<SmbDirEntry>> {
+public object FfiConverterSequenceTypeSmbDirEntry : FfiConverterRustBuffer<List<SmbDirEntry>> {
     override fun read(buf: ByteBuffer): List<SmbDirEntry> {
         val len = buf.getInt()
         return List<SmbDirEntry>(len) {
@@ -2689,25 +2970,31 @@ public object FfiConverterSequenceTypeSmbDirEntry: FfiConverterRustBuffer<List<S
 }
 
 
-
-
-
-
-
-
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-     suspend fun `connectSamba`(`config`: SambaServerConfig) : SmbFileSystem? {
-        return uniffiRustCallAsync(
+@Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+suspend fun `connectSamba`(`config`: SmbServerConfig): SmbFileSystem? {
+    return uniffiRustCallAsync(
         UniffiLib.uniffi_samba_cargo_fn_func_connect_samba(
-        FfiConverterTypeSambaServerConfig.lower(`config`),),
-        { future, callback, continuation -> UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(future, continuation) },
+            FfiConverterTypeSmbServerConfig.lower(`config`),
+        ),
+        { future, callback, continuation ->
+            UniffiLib.ffi_samba_cargo_rust_future_poll_rust_buffer(
+                future,
+                callback,
+                continuation
+            )
+        },
+        { future, continuation ->
+            UniffiLib.ffi_samba_cargo_rust_future_complete_rust_buffer(
+                future,
+                continuation
+            )
+        },
         { future -> UniffiLib.ffi_samba_cargo_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterOptionalTypeSmbFileSystem.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
-    }
+}
 
 

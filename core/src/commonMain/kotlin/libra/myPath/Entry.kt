@@ -13,5 +13,5 @@ sealed interface Entry {
     suspend fun exists() = fileSystem exists path
     suspend fun metadata() = fileSystem metadata path
     suspend fun isTreePath() = fileSystem isTreePath path
-    suspend fun resolveParent() = fileSystem resolveParent path
+    suspend fun resolveParent() = parent ?: fileSystem.resolveParent(path)
 }

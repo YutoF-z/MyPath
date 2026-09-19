@@ -6,7 +6,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 
 #[derive(uniffi::Record)]
-pub struct SambaServerConfig {
+pub struct SmbServerConfig {
     pub host: Vec<String>,
     pub port: Option<u16>,
     pub share_name: String,
@@ -45,7 +45,7 @@ pub struct SmbFileWriter {
     writer: Mutex<Option<FileWriter>>,
 }
 
-impl SambaServerConfig {
+impl SmbServerConfig {
     pub fn to_client_config(&self, timeout: Duration) -> Vec<ClientConfig> {
         self.host
             .iter()
@@ -65,7 +65,7 @@ impl SambaServerConfig {
 }
 
 #[uniffi::export]
-pub async fn connect_samba(config: SambaServerConfig) -> Option<Arc<SmbFileSystem>> {
+pub async fn connect_samba(config: SmbServerConfig) -> Option<Arc<SmbFileSystem>> {
     let timeout = Duration::from_secs(3);
 
     for cnf in config.to_client_config(timeout) {
@@ -171,7 +171,7 @@ impl SmbFileReader {
         }
     }
 
-    pub async fn close(&self) -> bool {
+    pub async fn finish(&self) -> bool {
         let mut guard = self.reader.lock().await;
         if let Some(reader) = guard.take() {
             reader.close().await.is_ok()
@@ -194,8 +194,9 @@ impl SmbFileWriter {
             false
         }
     }
+    
 
-    pub async fn close(&self) -> bool {
+    pub async fn finish(&self) -> bool {
         let mut guard = self.writer.lock().await;
         if let Some(writer) = guard.take() {
             writer.finish().await.is_ok()

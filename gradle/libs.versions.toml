@@ -14,16 +14,10 @@ android-compileSdk = "37"
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.11.0" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-io-core
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version = "0.9.1" }
-# https://mvnrepository.com/artifact/com.squareup.okio/okio
-okio = { module = "com.squareup.okio:okio", version = "3.18.2" }
 # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version = "0.8.0" }
 
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
-# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-# https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json-io
-kotlinx-serialization-json-okio = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json-okio", version.ref = "kotlinx-serialization" }
 
 #: https://mvnrepository.com/artifact/androidx.documentfile/documentfile
 documentfile = { module = "androidx.documentfile:documentfile", version = "1.1.0" }
@@ -49,13 +43,10 @@ vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.37
 
 [bundles]
 impl-core = [
-    "okio",
     "kotlinx-io-core",
     "kotlinx-datetime",
     "kotlinx-coroutines-core",
-    "kotlinx-serialization-core",
-    "kotlinx-serialization-json",
-    "kotlinx-serialization-json-okio"
+    "kotlinx-serialization-core"
 ]
 
 impl-android = [
@@ -65,7 +56,6 @@ impl-android = [
 
 impl-samba = [
     "jna",
-    "okio",
     "kotlinx-io-core",
     "kotlinx-coroutines-core",
     "kotlinx-serialization-core"

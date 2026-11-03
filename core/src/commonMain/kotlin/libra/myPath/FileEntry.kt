@@ -26,7 +26,6 @@ data class FileEntry(
     suspend infix fun copyFrom(from: FileEntry) = fileSystem.copyFrom(path, from)
     suspend infix fun moveFrom(from: FileEntry) = fileSystem.moveFrom(path, from)
 
-
     suspend fun readByteArray(): ByteArray = withContext(Dispatchers.IO) {
         source().buffered().use { it.readByteArray() }
     }
@@ -49,15 +48,16 @@ data class FileEntry(
         format.decodeFromString(serializer, readString())
     }
 
-
     suspend fun write(
         source: RawSource,
         append: Boolean = false
-    ) {
-        withContext(Dispatchers.IO) {
-            sink(append).buffered()
-                .use { it.transferFrom(source) > 0 }
+    ) = withContext(Dispatchers.IO) {
+        source.use { src ->
+            sink(append).buffered().use { dst ->
+                dst.transferFrom(src)
+            }
         }
+        Unit
     }
 
     suspend fun write(
@@ -70,10 +70,8 @@ data class FileEntry(
     suspend fun write(
         value: String,
         append: Boolean = false
-    ) {
-        withContext(Dispatchers.IO) {
-            sink(append).buffered().use { it.writeString(value) }
-        }
+    ) = withContext(Dispatchers.IO) {
+        sink(append).buffered().use { it.writeString(value) }
     }
 }
 
@@ -88,7 +86,6 @@ suspend fun <T> FileEntry.write(
 
 suspend inline fun <reified T> FileEntry.write(value: T, format: BinaryFormat) =
     write(value, serializer<T>(), format)
-
 
 suspend inline infix fun <reified T> FileEntry.read(format: StringFormat): T =
     read(serializer<T>(), format)

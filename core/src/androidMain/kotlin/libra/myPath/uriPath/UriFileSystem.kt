@@ -48,10 +48,7 @@ object UriFileSystem : FileSystem, KoinComponent {
     override suspend fun metadata(path: Path): FileMetadata? = withContext(Dispatchers.IO) {
         context.contentResolver.query(
             path.path.toUri(),
-            arrayOf(
-                DocumentsContract.Document.COLUMN_MIME_TYPE,
-                DocumentsContract.Document.COLUMN_SIZE
-            ),
+            METADATA_PROJECTION,
             null,
             null,
             null
@@ -87,8 +84,7 @@ object UriFileSystem : FileSystem, KoinComponent {
     }
 
     override suspend fun delete(path: Path): Boolean = withContext(Dispatchers.IO) {
-        documentFile(path)?.delete()
-        !exists(path)
+        documentFile(path)?.delete() == true || !exists(path)
     }
 
     override suspend fun isTreePath(path: Path): Boolean = withContext(Dispatchers.IO) {
@@ -106,24 +102,23 @@ object UriFileSystem : FileSystem, KoinComponent {
             ?: error("exists: ${exists(path)}. < $path, $append")
     }
 
+    private suspend fun tryMoveDocument(from: Entry, targetParentPath: Path): Boolean {
+        if (from.fileSystem !== this@UriFileSystem) return false
+        val sourceParentUri = from.resolveParent()?.path?.toUri() ?: return false
+        return runCatching {
+            DocumentsContract.moveDocument(
+                context.contentResolver,
+                from.path.path.toUri(),
+                sourceParentUri,
+                targetParentPath.path.toUri()
+            ) != null
+        }.getOrDefault(false)
+    }
+
     override suspend fun moveFrom(
         path: Path, from: FileEntry
     ): Boolean = withContext(Dispatchers.IO) {
-        if (from.fileSystem === this@UriFileSystem) from.resolveParent()?.path?.toUri()
-            ?.let { sourceParentUri ->
-                val rtn = runCatching {
-                    DocumentsContract.moveDocument(
-                        context.contentResolver,
-                        from.path.path.toUri(),
-                        sourceParentUri,
-                        path.path.toUri()
-                    ) != null
-                }.onFailure { println(it) }.getOrNull() == true
-
-                if (rtn) return@withContext true
-            }
-
-
+        if (tryMoveDocument(from, path)) return@withContext true
         super.moveFrom(path, from)
     }
 
@@ -139,15 +134,14 @@ object UriFileSystem : FileSystem, KoinComponent {
     override suspend fun createFile(
         path: Path, name: String
     ): FileEntry = withContext(Dispatchers.IO) {
-        val existing = file(path, name)
-        if (existing != null) return@withContext existing
+        file(path, name)?.let { return@withContext it }
 
         val extension = name.substringAfterLast('.', "")
         val mimeType = if (extension.isNotEmpty()) {
             android.webkit.MimeTypeMap.getSingleton()
-                .getMimeTypeFromExtension(extension.lowercase()) ?: "application/octet-stream"
+                .getMimeTypeFromExtension(extension.lowercase()) ?: DEFAULT_MIME_TYPE
         } else {
-            "application/octet-stream"
+            DEFAULT_MIME_TYPE
         }
 
         documentFile(path)?.createFile(mimeType, name)?.uri
@@ -167,8 +161,7 @@ object UriFileSystem : FileSystem, KoinComponent {
     override suspend fun createDirectory(
         path: Path, name: String
     ): DirectoryEntry = withContext(Dispatchers.IO) {
-        val existing = directory(path, name)
-        if (existing != null) return@withContext existing
+        directory(path, name)?.let { return@withContext it }
 
         documentFile(path)?.createDirectory(name)?.uri
             ?.let { DirectoryEntry(Path(it.toString()), this@UriFileSystem, path) }
@@ -182,27 +175,27 @@ object UriFileSystem : FileSystem, KoinComponent {
             DocumentsContract.buildChildDocumentsUriUsingTree(
                 uri, DocumentsContract.getDocumentId(uri)
             ),
-            arrayOf(
-                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                DocumentsContract.Document.COLUMN_MIME_TYPE
-            ),
+            LIST_PROJECTION,
             null,
             null,
             null
         )?.use { cursor ->
+            val docIdCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+            val mimeCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+
             while (cursor.moveToNext()) {
-                val childDocId = cursor.getString(
-                    cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-                )
+                val childDocId = cursor.getString(docIdCol)
+                val mimeType = cursor.getStringOrNull(mimeCol)
+                val childPath = Path(DocumentsContract.buildDocumentUriUsingTree(uri, childDocId).toString())
 
-                val childPath =
-                    DocumentsContract.buildDocumentUriUsingTree(uri, childDocId)
-
-                when (cursor.isDirectory()) {
-                    true -> DirectoryEntry(Path(childPath.toString()), this@UriFileSystem, path)
-                    false -> FileEntry(Path(childPath.toString()), this@UriFileSystem, path)
-                    null -> error(" exists: ${exists(path)}. < $path, $childDocId")
-                }.let { emit(it) }
+                val entry = when (mimeType) {
+                    DocumentsContract.Document.MIME_TYPE_DIR ->
+                        DirectoryEntry(childPath, this@UriFileSystem, path)
+                    null -> error("exists: ${exists(path)}. < $path, $childDocId")
+                    else ->
+                        FileEntry(childPath, this@UriFileSystem, path)
+                }
+                emit(entry)
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -210,24 +203,22 @@ object UriFileSystem : FileSystem, KoinComponent {
     override suspend fun moveFrom(
         path: Path, from: DirectoryEntry
     ): Boolean = withContext(Dispatchers.IO) {
-        if (from.fileSystem === this@UriFileSystem) from.resolveParent()?.path?.toUri()
-            ?.let { sourceParentUri ->
-                val rtn = runCatching {
-                    DocumentsContract.moveDocument(
-                        context.contentResolver,
-                        from.path.path.toUri(),
-                        sourceParentUri,
-                        path.path.toUri()
-                    ) != null
-                }.onFailure { println(it) }.getOrNull() == true
-
-                if (rtn) return@withContext true
-            }
-
+        if (tryMoveDocument(from, path)) return@withContext true
         super.moveFrom(path, from)
     }
-}
 
+    private const val DEFAULT_MIME_TYPE = "application/octet-stream"
+
+    private val METADATA_PROJECTION = arrayOf(
+        DocumentsContract.Document.COLUMN_MIME_TYPE,
+        DocumentsContract.Document.COLUMN_SIZE
+    )
+
+    private val LIST_PROJECTION = arrayOf(
+        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+        DocumentsContract.Document.COLUMN_MIME_TYPE
+    )
+}
 
 /**
  * projection need a [DocumentsContract.Document.COLUMN_FLAGS]

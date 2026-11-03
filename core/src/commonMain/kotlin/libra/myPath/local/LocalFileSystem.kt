@@ -3,9 +3,8 @@ package libra.myPath.local
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
 import kotlinx.io.RawSink
 import kotlinx.io.RawSource
@@ -21,35 +20,39 @@ import kotlinx.io.files.Path as KPath
 
 @Serializable
 object LocalFileSystem : FileSystem {
-    override suspend fun name(path: Path): String = KPath(path.path).name
+    private fun Path.toKPath(): KPath = KPath(path)
+
+    override suspend fun name(path: Path): String = path.toKPath().name
+
     override suspend fun exists(path: Path): Boolean =
-        withContext(Dispatchers.IO) { SystemFileSystem.exists(KPath(path.path)) }
+        withContext(Dispatchers.IO) { SystemFileSystem.exists(path.toKPath()) }
 
     override suspend fun metadata(path: Path): FileMetadata? =
-        withContext(Dispatchers.IO) { SystemFileSystem.metadataOrNull(KPath(path.path)) }
+        withContext(Dispatchers.IO) { SystemFileSystem.metadataOrNull(path.toKPath()) }
 
     override suspend fun resolveParent(path: Path): Path? =
-        KPath(path.path).parent?.let { Path(it.toString()) }
+        path.toKPath().parent?.let { Path(it.toString()) }
 
     override suspend fun delete(path: Path): Boolean = withContext(Dispatchers.IO) {
-        SystemFileSystem.delete(KPath(path.path))
-        !exists(path)
+        val kPath = path.toKPath()
+        SystemFileSystem.delete(kPath, mustExist = false)
+        !SystemFileSystem.exists(kPath)
     }
 
     override suspend fun source(path: Path): RawSource = withContext(Dispatchers.IO) {
-        SystemFileSystem.source(KPath(path.path))
+        SystemFileSystem.source(path.toKPath())
     }
 
     override suspend fun sink(path: Path, append: Boolean): RawSink = withContext(Dispatchers.IO) {
-        SystemFileSystem.sink(KPath(path.path), append)
+        SystemFileSystem.sink(path.toKPath(), append)
     }
 
     override suspend fun moveFrom(path: Path, from: FileEntry): Boolean =
         withContext(Dispatchers.IO) {
-            if (from.fileSystem === this) {
-                val metadata = from.metadata()
-                SystemFileSystem.atomicMove(KPath(from.path.path), KPath(path.path))
-                metadata(path)?.size == metadata?.size
+            if (from.fileSystem === this@LocalFileSystem) {
+                val fromSize = from.metadata()?.size
+                SystemFileSystem.atomicMove(from.path.toKPath(), path.toKPath())
+                metadata(path)?.size == fromSize
             } else {
                 super.moveFrom(path, from)
             }
@@ -59,24 +62,20 @@ object LocalFileSystem : FileSystem {
         path: Path, name: String
     ): FileEntry = withContext(Dispatchers.IO) {
         check(isTreePath(path) == true) { "$path is not a tree path. < $name" }
-
         FileEntry(
-            Path(KPath(KPath(path.path), name).toString()),
-            this@LocalFileSystem
+            path = Path(KPath(path.toKPath(), name).toString()),
+            fileSystem = this@LocalFileSystem,
+            parent = path
         )
     }
 
     override suspend fun createFile(
         path: Path, name: String
     ): FileEntry = withContext(Dispatchers.IO) {
-        file(path, name).run {
-            if (metadata()?.isRegularFile == true) {
-                return@withContext this
-            }
-
+        file(path, name).apply {
+            if (metadata()?.isRegularFile == true) return@withContext this
             sink(true).close()
             check(metadata()?.isRegularFile == true) { "Failed to create $this" }
-            this
         }
     }
 
@@ -85,43 +84,38 @@ object LocalFileSystem : FileSystem {
     ): DirectoryEntry = withContext(Dispatchers.IO) {
         check(isTreePath(path) == true) { "$path is not a tree path. < $name" }
         DirectoryEntry(
-            Path(KPath(KPath(path.path), name).toString()),
-            this@LocalFileSystem
+            path = Path(KPath(path.toKPath(), name).toString()),
+            fileSystem = this@LocalFileSystem,
+            parent = path
         )
     }
 
     override suspend fun createDirectory(
         path: Path, name: String
     ): DirectoryEntry = withContext(Dispatchers.IO) {
-        directory(path, name).run {
-            if (metadata()?.isDirectory == true) {
-                return@withContext this
-            }
-
-            SystemFileSystem.createDirectories(KPath(path.path))
+        directory(path, name).apply {
+            if (metadata()?.isDirectory == true) return@withContext this
+            SystemFileSystem.createDirectories(this.path.toKPath())
             check(metadata()?.isDirectory == true) { "Failed to create $this" }
-            this
         }
     }
 
-    override fun list(path: Path): Flow<Entry> =
-        SystemFileSystem.list(KPath(path.path))
-            .asFlow()
-            .mapNotNull { p ->
-                Path(p.toString()).let {
-                    when (isTreePath(it)) {
-                        true -> DirectoryEntry(it, this@LocalFileSystem)
-                        false -> FileEntry(it, this@LocalFileSystem)
-                        null -> null
-                    }
-                }
+    override fun list(path: Path): Flow<Entry> = flow {
+        for (childKPath in SystemFileSystem.list(path.toKPath())) {
+            val childPath = Path(childKPath.toString())
+            val entry = when (SystemFileSystem.metadataOrNull(childKPath)?.isDirectory) {
+                true -> DirectoryEntry(childPath, this@LocalFileSystem, path)
+                false -> FileEntry(childPath, this@LocalFileSystem, path)
+                null -> null
             }
-            .flowOn(Dispatchers.IO)
+            if (entry != null) emit(entry)
+        }
+    }.flowOn(Dispatchers.IO)
 
     override suspend fun moveFrom(path: Path, from: DirectoryEntry): Boolean =
         withContext(Dispatchers.IO) {
-            if (from.fileSystem === this) {
-                SystemFileSystem.atomicMove(KPath(from.path.path), KPath(path.path))
+            if (from.fileSystem === this@LocalFileSystem) {
+                SystemFileSystem.atomicMove(from.path.toKPath(), path.toKPath())
                 true
             } else {
                 super.moveFrom(path, from)

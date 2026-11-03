@@ -1,6 +1,6 @@
 [package]
 name = "samba_cargo"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [[bin]]
@@ -15,7 +15,6 @@ crate-type = ["cdylib", "staticlib"]
 path = "src/commonMain/rust/lib.rs"
 
 [dependencies]
-uniffi = { version = "0.32.1", features = ["cli"] }
-smb2 = "0.21.0"
-tokio = "1.53.1"
-futures = "0.3.34"
+uniffi = { version = "0.32.2", features = ["cli", "tokio"] }
+smb2 = "0.39.0"
+tokio = "1.54.1"

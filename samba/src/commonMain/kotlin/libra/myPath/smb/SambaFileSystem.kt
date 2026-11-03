@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.io.Buffer
 import kotlinx.io.RawSink
@@ -26,22 +28,32 @@ import uniffi.samba_cargo.connectSamba
 @Serializable
 class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     @Transient
-    private lateinit var smbFileSystem: SmbFileSystem
+    private val mutex = Mutex()
 
-    private fun pathSeparator(path: Path) = if ('\\' in path.path) '\\' else '/'
+    @Transient
+    private var smbFileSystem: SmbFileSystem? = null
 
-    suspend fun fileSystem(): SmbFileSystem? = withContext(Dispatchers.IO) {
-        if (::smbFileSystem.isInitialized) {
-            smbFileSystem
-        } else {
-            connectSamba(config.toSmbServerConfig())?.also { smbFileSystem = it }
-        }
+    private fun pathSeparator(path: Path): Char = if ('\\' in path.path) '\\' else '/'
+
+    private fun joinPath(parent: Path, name: String): Path {
+        val sep = pathSeparator(parent)
+        val trimmed = parent.path.trimEnd(sep)
+        return if (trimmed.isEmpty()) Path(name) else Path("$trimmed$sep$name")
     }
 
+    suspend fun fileSystem(): SmbFileSystem? =
+        smbFileSystem ?: withContext(Dispatchers.IO) {
+            mutex.withLock {
+                smbFileSystem ?: connectSamba(config.toSmbServerConfig())?.also { smbFileSystem = it }
+            }
+        }
+
+    private suspend fun requireFs(target: Any): SmbFileSystem =
+        checkNotNull(fileSystem()) { "Failed to connect $config < $target" }
+
     override suspend fun name(path: Path): String? = path.path.run {
-        pathSeparator(path)
-            .let { trimEnd(it).substringAfterLast(it, "") }
-            .ifBlank { null }
+        val sep = pathSeparator(path)
+        trimEnd(sep).substringAfterLast(sep).ifBlank { null }
     }
 
     override suspend fun exists(path: Path): Boolean = withContext(Dispatchers.IO) {
@@ -49,9 +61,7 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     }
 
     override suspend fun metadata(path: Path): FileMetadata? = withContext(Dispatchers.IO) {
-        check(fileSystem() != null) { "Failed to connect $config < $path" }
-
-        smbFileSystem.metadata(path.path)?.run {
+        requireFs(path).metadata(path.path)?.run {
             FileMetadata(
                 isRegularFile = isFile,
                 isDirectory = isDirectory,
@@ -61,19 +71,19 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     }
 
     override suspend fun resolveParent(path: Path): Path? = path.path.run {
-        pathSeparator(path)
-            .let { trimEnd(it).substringBeforeLast(it, "") }
+        val sep = pathSeparator(path)
+        trimEnd(sep)
+            .substringBeforeLast(sep, "")
             .ifBlank { null }
             ?.let { Path(it) }
     }
 
     override suspend fun delete(path: Path): Boolean = withContext(Dispatchers.IO) {
-        check(fileSystem() != null) { "Failed to connect $config < $path" }
-
+        val fs = requireFs(path)
         if (isTreePath(path) == true) {
-            smbFileSystem.deleteDirectory(path.path)
+            fs.deleteDirectory(path.path)
         } else {
-            smbFileSystem.deleteFile(path.path)
+            fs.deleteFile(path.path)
         }
     }
 
@@ -81,10 +91,9 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
         path: Path,
         name: String
     ): FileEntry = FileEntry(
-        path = pathSeparator(path).let { sep ->
-            Path("${path.path.trimEnd(sep)}$sep$name")
-        },
-        fileSystem = this
+        path = joinPath(path, name),
+        fileSystem = this,
+        parent = path
     )
 
     override suspend fun createFile(
@@ -94,7 +103,7 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
         file(path, name).apply {
             if (exists()) return@apply
 
-            sink(true).close()
+            sink(false).close()
             check(metadata()?.isRegularFile == true) { "Failed to create $this" }
         }
     }
@@ -103,12 +112,10 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
         path: Path,
         name: String
     ): DirectoryEntry = DirectoryEntry(
-        path = pathSeparator(path).let { sep ->
-            Path("${path.path.trimEnd(sep)}$sep$name")
-        },
-        fileSystem = this
+        path = joinPath(path, name),
+        fileSystem = this,
+        parent = path
     )
-
 
     override suspend fun createDirectory(
         path: Path,
@@ -116,29 +123,28 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     ): DirectoryEntry = withContext(Dispatchers.IO) {
         directory(path, name).apply {
             if (exists()) return@apply
-            check(fileSystem() != null) { "Failed to connect $config. < $path, $name" }
-            check(smbFileSystem.createDirectory(path.path)) { "Failed to create $this." }
+            val fs = requireFs(this.path)
+            check(fs.createDirectory(this.path.path)) { "Failed to create $this." }
         }
     }
 
     override fun list(path: Path): Flow<Entry> = flow {
-        check(fileSystem() != null) { "Failed to connect $config. < $path" }
+        val fs = requireFs(path)
 
-        smbFileSystem.listDirectory(path.path)?.forEach {
-            if (it.isDirectory) {
-                emit(directory(path, it.name))
+        fs.listDirectory(path.path)?.forEach { item ->
+            if (item.isDirectory) {
+                emit(directory(path, item.name))
             } else {
-                emit(file(path, it.name))
+                emit(file(path, item.name))
             }
         }
     }.flowOn(Dispatchers.IO)
 
-
     override suspend fun source(path: Path): RawSource = withContext(Dispatchers.IO) {
         check(isTreePath(path) == false) { "$path is not a file or not exists." }
-        check(fileSystem() != null) { "Failed to connect $config. < $path" }
+        val fs = requireFs(path)
 
-        smbFileSystem.openRead(path.path)
+        fs.openRead(path.path)
             ?.let { SambaSource(path, it) }
             ?: error("Failed to open $path")
     }
@@ -146,22 +152,21 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     inner class SambaSource(
         val path: Path,
         val reader: SmbFileReader,
-        var position: ULong = 0L.toULong()
+        var position: ULong = 0UL
     ) : RawSource {
         override fun readAtMostTo(sink: Buffer, byteCount: Long): Long {
             require(byteCount >= 0) { "byteCount < 0: $byteCount < $path" }
+            if (byteCount == 0L) return 0L
 
             return runBlocking {
-                check(fileSystem() != null) { "Failed to connect $config. < $path" }
-                reader.readAt(position, byteCount.toULong())?.let {
-                    val size = it.size
-
+                reader.readAt(position, byteCount.toULong())?.let { bytes ->
+                    val size = bytes.size
                     if (size > 0) {
-                        sink.write(it)
+                        sink.write(bytes)
                         position += size.toULong()
                         size.toLong()
-                    } else -1
-                } ?: -1
+                    } else -1L
+                } ?: -1L
             }
         }
 
@@ -172,10 +177,10 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
     }
 
     override suspend fun sink(path: Path, append: Boolean): RawSink = withContext(Dispatchers.IO) {
-        check(isTreePath(path) == false) { "$path is not a file or not exists." }
-        check(fileSystem() != null) { "Failed to connect $config. < $path" }
+        check(isTreePath(path) != true) { "$path is a directory." }
+        val fs = requireFs(path)
 
-        smbFileSystem.openWrite(path.path, append)
+        fs.openWrite(path.path, append)
             ?.let { SambaSink(path, it) }
             ?: error("Failed to open $path")
     }
@@ -193,15 +198,11 @@ class SambaFileSystem(val config: SambaServerConfig) : FileSystem {
 
         override fun write(source: Buffer, byteCount: Long) {
             require(byteCount >= 0) { "byteCount < 0: $byteCount < $path" }
+            if (byteCount == 0L) return
 
-            return runBlocking {
-                check(fileSystem() != null) { "Failed to connect $config. < $path" }
-                val buffer = Buffer()
-                source.readAtMostTo(buffer, byteCount)
-
-                check(
-                    writer.writeAt(buffer.use { it.readByteArray() })
-                ) { "Failed to write $path" }
+            val bytes = source.readByteArray(byteCount.toInt())
+            runBlocking {
+                check(writer.writeAt(bytes)) { "Failed to write $path" }
             }
         }
     }
